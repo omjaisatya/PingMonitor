@@ -1,0 +1,34 @@
+{
+  "name": "com.pingmonitor.sp",
+  "version": "0.0.1",
+  "description": "pingmonitor is monitoring url checking if server is down",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "saas",
+    "domain",
+    "check",
+    "url",
+    "broken"
+  ],
+  "author": "Satya Prakash",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "axios": "^1.14.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.3.3",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.4"
+  }
+}
