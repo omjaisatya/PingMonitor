@@ -41,7 +41,9 @@ const signup = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Server Error, try again later", error: error.message });
   }
 };
 
@@ -74,7 +76,9 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Server error, try again later", error: error.message });
   }
 };
 

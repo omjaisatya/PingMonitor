@@ -26,6 +26,12 @@ const logSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  //logs automatically deleted
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    expires: 604800, // 7 days
+  },
 });
 
 export default mongoose.model("Log", logSchema);

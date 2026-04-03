@@ -24,14 +24,17 @@ const createMonitor = async (req, res) => {
 const getMonitors = async (req, res) => {
   try {
     const allMonitors = await Monitor.find({ userId: req.user._id }).sort({
-      cretedAt: -1,
+      createdAt: -1,
     });
 
     res.status(200).json({ count: allMonitors.length, allMonitors });
   } catch (error) {
     return res
       .status(500)
-      .json({ message: "There is Server Error", error: error.message });
+      .json({
+        message: "There is Server Error, try again later",
+        error: error.message,
+      });
   }
 };
 
@@ -42,7 +45,10 @@ const getMonitorById = async (req, res) => {
       userId: req.user._id,
     });
 
-    if (!monitor) return res.status(404).json({ message: "Monitor nor found" });
+    if (!monitor)
+      return res
+        .status(404)
+        .json({ message: "Monitor not found, try creating one" });
 
     const logs = await Log.find({ monitorId: monitor._id })
       .sort({ timestamp: -1 })
