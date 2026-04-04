@@ -1,14 +1,46 @@
 import Log from "../models/Log.js";
 import Monitor from "../models/Monitor.js";
 
+// User store duplicate url, to prevent this implement valid
+
+const validUrl = (string) => {
+  try {
+    new URL(string);
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
 const createMonitor = async (req, res) => {
   try {
     const { name, url, interval } = req.body;
 
+    if (!name || !url) {
+      return res
+        .status(400)
+        .json({ message: "Enter name and URL, must required" });
+    }
+
+    if (!validUrl(url)) {
+      return res.status(400).json({ message: "Please provide valid URL" });
+    }
+
+    const checkUrl = await Monitor.findOne({
+      userId: req.user._id,
+      url: url.trim(),
+    });
+
+    if (checkUrl) {
+      return res.status(409).json({
+        message: `You're already monitoring this url ${checkUrl.name}`,
+      });
+    }
+
     const createMonitor = await Monitor.create({
       userId: req.user._id,
-      name,
-      url,
+      name: name.trim(),
+      url: url.trim(),
       interval: interval || 10,
     });
 
@@ -29,12 +61,10 @@ const getMonitors = async (req, res) => {
 
     res.status(200).json({ count: allMonitors.length, allMonitors });
   } catch (error) {
-    return res
-      .status(500)
-      .json({
-        message: "There is Server Error, try again later",
-        error: error.message,
-      });
+    return res.status(500).json({
+      message: "There is Server Error, try again later",
+      error: error.message,
+    });
   }
 };
 
@@ -65,12 +95,35 @@ const getMonitorById = async (req, res) => {
 const updateMonitor = async (req, res) => {
   try {
     const { name, url, interval } = req.body;
+
+    if (url && validUrl(url)) {
+      res.status(400).json({ message: "Please provide valid URL" });
+    }
+
+    if (url) {
+      const duplicateUrl = await Monitor.findOne({
+        userId: req.user._id,
+        url: url.trim(),
+        _id: { $ne: req.params.id },
+      });
+
+      if (duplicateUrl) {
+        res.status(409).json({
+          message: `You're already monitoring this URL ${duplicateUrl.name}`,
+        });
+      }
+    }
+
     const monitor = await Monitor.findOneAndUpdate(
       {
         _id: req.params.id,
         userId: req.user._id,
       },
-      { name, url, interval },
+      {
+        ...(name && { name: name.trim() }),
+        ...(url && { url: url.trim() }),
+        ...(interval && { interval }),
+      },
       { new: true, runValidators: true },
     );
 
@@ -78,6 +131,7 @@ const updateMonitor = async (req, res) => {
       return res
         .status(404)
         .json({ message: "Monitor not found, try creating new monitor" });
+
     res.status(200).json({ message: "Successfully Updated", monitor });
   } catch (error) {
     return res

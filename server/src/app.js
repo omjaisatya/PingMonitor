@@ -23,4 +23,15 @@ app.get("/", (req, res) => {
   res.json({ message: "Ping monitor is live" });
 });
 
+app.use((req, res, next) => {
+  res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+});
+
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err.stack);
+  res.status(err.status || 500).json({
+    message: err.message || "An Unexpexted server error",
+  });
+});
+
 export default app;
