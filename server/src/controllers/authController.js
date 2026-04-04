@@ -82,4 +82,14 @@ const login = async (req, res) => {
   }
 };
 
-export { login, signup };
+const logout = async (req, res) => {
+  try {
+    // todo - i'll implementing real logout session
+    // middleware already verified
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+export { login, signup, logout };
