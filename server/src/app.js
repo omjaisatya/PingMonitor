@@ -7,9 +7,9 @@ import { FRONTEND_URL } from "./config/env.config.js";
 //initialize express
 const app = express();
 
-// i'll change this origin once frontend complete and deploy so, currently i set it for all domain. Anyone can request from all site
 let corsOptions = {
-  origin: "*" || FRONTEND_URL,
+  origin: FRONTEND_URL,
+  credentials: true,
 };
 
 // middleware
@@ -33,5 +33,10 @@ app.use((err, req, res, next) => {
     message: err.message || "An Unexpexted server error",
   });
 });
+
+// todo: implement user profile page section where user can change their password or email.
+// todo: implement forget password if user request
+// todo: implement userverify when they register account, to prevent spam.
+// todo: implement user recovery password
 
 export default app;
