@@ -11,8 +11,24 @@ PingMonitor is a complete full-stack application designed to monitor the uptime 
 
 ```text
 PingMonitor/
-├── client/      
-└── server/       
+├── assets/
+│   └── logo.png
+├── client/   
+│   ├── src/
+│   ├── public/  
+│   ├── .gitignore
+│   ├── index.html
+│   ├── netlify.toml  //for optimize netlify build    
+│   ├── package-lock.json    
+│   ├── vite.config.js   
+│   └── package.json  
+└── server/ 
+│   ├── src/
+│   ├── .gitignore
+│   ├── server.js
+│   └── package.json
+└── .gitignore 
+└── README.md     
 ```
 
 ## Tech Stack
