@@ -11,6 +11,7 @@ import AppName from "./components/AppName";
 // todo: implement user profile page section where user can change their password or email.
 // todo: implement forget password if user request
 // todo: implement userverify when they register account, to prevent spam.
+// todo: add react query (RTK)
 
 const AuthLoading = () => (
   <div
