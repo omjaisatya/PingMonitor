@@ -3,6 +3,7 @@ import routerAuth from "./routes/authRoutes.js";
 import routerMon from "./routes/monitorRoutes.js";
 import cors from "cors";
 import { FRONTEND_URL } from "./config/env.config.js";
+import health from "./routes/healthRoute.js";
 
 //initialize express
 const app = express();
@@ -17,6 +18,9 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use("/api/auth", routerAuth);
 app.use("/api/monitors", routerMon);
+
+// apihealth check
+app.use("/api", health);
 
 // main home url
 app.get("/", (req, res) => {
