@@ -2,6 +2,11 @@
 
 PingMonitor is a complete full-stack application designed to monitor the uptime of URLs and APIs in the background. It features a robust REST API backend that pings services, logs response times, and sends email alerts upon downtime, paired with a dynamic React frontend for managing monitors and visualizing uptime data.
 
+![GitHub last commit](https://img.shields.io/github/last-commit/omjaisatya/PingMonitor)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/omjaisatya/PingMonitor)
+![GitHub Created At](https://img.shields.io/github/created-at/omjaisatya/PingMonitor)
+![GitHub repo size](https://img.shields.io/github/repo-size/omjaisatya/PingMonitor)
+
 ## Project Structure
 
 ```text
@@ -117,9 +122,13 @@ To run this project, you will need to add the following environment variables to
 
 `EMAIL_PASS`
 
+> **Note:** Check `.env.example` for all available variables. Well-commented and easy to follow!
+
 ### 2. Client
 
 `VITE_SERVER_URL`
+
+`VITE_APP_TITLE`
 
 > **Note:** Your Banckend hosted URL, i.e <https://www.domain.com/>.  
 > For Free Hosting, use Render.com
@@ -162,13 +171,6 @@ To keep the application efficient and within the MongoDB Free Tier limits, we ha
 ## Author
 
 - [@omjaisatya](https://www.github.com/omjaisatya)
-
-## Badges
-
-![GitHub last commit](https://img.shields.io/github/last-commit/omjaisatya/PingMonitor)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/w/omjaisatya/PingMonitor)
-![GitHub Created At](https://img.shields.io/github/created-at/omjaisatya/PingMonitor)
-![GitHub repo size](https://img.shields.io/github/repo-size/omjaisatya/PingMonitor)
 
 ## Feedback
 
