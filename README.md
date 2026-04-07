@@ -134,11 +134,12 @@ To run this project, you will need to add the following environment variables to
 
 `JWT_SECRET`
 
-`EMAIL_USER`
+`EMAIL_USE`
 
 `EMAIL_PASS`
 
 > **Note:** Check `.env.example` for all available variables. Well-commented and easy to follow!
+> **Note:** For `EMAIL_USER` and `EMAIL_PASS` configuration, refer to the [Nodemailer Well-Known Services](https://nodemailer.com/smtp/well-known-services) documentation.
 
 ### 2. Client
 

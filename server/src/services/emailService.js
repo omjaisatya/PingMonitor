@@ -1,11 +1,17 @@
 import nodemailer from "nodemailer";
-import { EMAIL_PASS, EMAIL_USE } from "../config/env.config.js";
+import {
+  EMAIL_HOST,
+  EMAIL_PASS,
+  EMAIL_PORT,
+  EMAIL_SERVICE,
+  EMAIL_USE,
+} from "../config/env.config.js";
 
 const mailTransporter = nodemailer.createTransport({
-  service: "Gmail",
-  // host: "smtp.gmail.com",
-  // port: "465",
-  // secure: false,
+  service: EMAIL_SERVICE,
+  host: EMAIL_HOST,
+  port: EMAIL_PORT,
+  secure: true,
   auth: {
     user: EMAIL_USE,
     pass: EMAIL_PASS,
