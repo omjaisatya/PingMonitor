@@ -148,7 +148,7 @@ export default function Register() {
       </div>
 
       <div className="auth-bg-text" aria-hidden>
-        PING MONITOR
+        {AppName}
       </div>
     </div>
   );

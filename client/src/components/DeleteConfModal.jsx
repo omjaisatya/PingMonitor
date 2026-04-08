@@ -23,20 +23,8 @@ export default function DeleteConfModal({
       <div className="modal">
         <h2 className="modal-title">🗑 Delete Monitor</h2>
 
-        {/* TODO: extract these inline styles to the global theme file later */}
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "14px",
-            color: "var(--text-secondary)",
-            lineHeight: "1.7",
-          }}
-        >
-          Are you sure you want to delete{" "}
-          <strong style={{ color: "var(--text-primary)" }}>
-            {monitor.name}
-          </strong>
-          ?
+        <p className="modal-text">
+          Are you sure you want to delete <strong>{monitor.name}</strong>?
           <br />
           This will also permanently delete all associated logs.
         </p>

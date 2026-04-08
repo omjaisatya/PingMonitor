@@ -19,7 +19,7 @@ export default function Navbar() {
       await terminateSession();
       navigate("/login");
     } catch (err) {
-      console.error("[Navbar] failed to cleanly terminate session ->", err);
+      console.error("Navbar failed to cleanly terminate session ->", err);
       navigate("/login");
     } finally {
       setIsProcessingLogout(false);
@@ -39,7 +39,7 @@ export default function Navbar() {
             <div className="navbar-right desktop-only">
               <span className="navbar-user">
                 <span className="user-dot" />
-                {activeUser.name}
+                {activeUser.email}
               </span>
               <button
                 className="btn btn-outline btn-sm"
@@ -74,7 +74,7 @@ export default function Navbar() {
         <div className="mobile-menu">
           <span className="navbar-user">
             <span className="user-dot" />
-            {activeUser.name}
+            {activeUser.email}
           </span>
           <button
             className="btn btn-outline btn-sm btn-full"

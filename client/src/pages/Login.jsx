@@ -61,7 +61,9 @@ export default function Login() {
 
         <form className="auth-form" onSubmit={executeLogin}>
           <div className="form-group">
-            <label className="form-label">Email</label>
+            <label className="form-label" htmlFor="email">
+              Email
+            </label>
             <input
               className="form-input"
               type="email"
@@ -74,7 +76,9 @@ export default function Login() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Password</label>
+            <label className="form-label" htmlFor="password">
+              Password
+            </label>
             <input
               className="form-input"
               type="password"
@@ -112,7 +116,7 @@ export default function Login() {
       </div>
 
       <div className="auth-bg-text" aria-hidden>
-        PING MONITOR
+        {AppName}
       </div>
     </div>
   );

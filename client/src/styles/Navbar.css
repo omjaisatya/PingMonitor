@@ -29,14 +29,11 @@
   text-decoration: none;
 }
 
-.brand-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 10px var(--green);
-  animation: pulse-green 2s infinite;
-  flex-shrink: 0;
+.brand-logo {
+  height: 24px;
+  width: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .brand-text {
@@ -63,6 +60,10 @@
   font-family: var(--font-mono);
   font-size: 13px;
   color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .user-dot {
@@ -71,6 +72,7 @@
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 6px var(--accent);
+  flex-shrink: 0;
 }
 
 /* Hamburger */
