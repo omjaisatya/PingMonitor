@@ -46,11 +46,17 @@ export default function Register() {
         "/auth/signup",
         newUserPayload,
       );
-      establishSession(authPayload.user, authPayload.token);
-      navigate("/dashboard");
+
+      if (authPayload.newUser && authPayload.token) {
+        establishSession(authPayload.newUser, authPayload.token);
+      } else {
+        navigate("/login");
+      }
     } catch (err) {
-      console.error("RegisterComponent user signup failed ->", err);
-      // Fallback to a generic message if the backend doesn't send a specific error string
+      console.error(
+        "RegisterComponent user signup failed ->",
+        err.response?.data,
+      );
       setRegistrationError(
         err.response?.data?.message ||
           "Registration failed. Please check your connection and try again.",
