@@ -4,6 +4,7 @@ import api from "../api/axios";
 import { useAuth } from "../context/useAuth";
 import "../styles/LoginRegis.css";
 import AppName from "../components/AppName";
+import logo from "../assets/logo.png";
 
 export default function Login() {
   const { login: establishSession } = useAuth();
@@ -48,7 +49,7 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-brand">
-        <span className="brand-dot-lg" />
+        <img src={logo} alt="app-logo" className="brand-logo" />
         <span className="auth-brand-name">{AppName}</span>
       </div>
 

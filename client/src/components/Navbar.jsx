@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import "../styles/Navbar.css";
 import AppName from "./AppName";
+import logo from "../assets/logo.png";
 
 export default function Navbar() {
   const { user: activeUser, logout: terminateSession } = useAuth();
@@ -19,10 +20,8 @@ export default function Navbar() {
       navigate("/login");
     } catch (err) {
       console.error("[Navbar] failed to cleanly terminate session ->", err);
-      // Fallback navigation in case the backend request hangs or fails
       navigate("/login");
     } finally {
-      // Unlikely to be seen if navigation succeeds, but good cleanup practice
       setIsProcessingLogout(false);
     }
   };
@@ -31,7 +30,7 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="navbar-inner">
         <Link to="/dashboard" className="navbar-brand">
-          <span className="brand-dot" />
+          <img src={logo} alt="app-logo" className="brand-logo" />
           <span className="brand-text">{AppName}</span>
         </Link>
 
