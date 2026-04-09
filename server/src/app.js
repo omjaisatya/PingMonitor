@@ -27,6 +27,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Ping monitor is live" });
 });
 
+// move error and global error handling in middleware
 app.use((req, res, next) => {
   res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });

@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import { JWT_SECRET } from "../config/env.config.js";
 
 // for protecting private routes - user home,
+// todo - implement cookies
 const protect = async (req, res, next) => {
   try {
     const authHead = req.headers.authorization;

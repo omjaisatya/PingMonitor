@@ -12,4 +12,6 @@ const connectDb = async () => {
   }
 };
 
+// todo: improve db connection, add pre for hashing password direct in db config not in controller
+
 export default connectDb;

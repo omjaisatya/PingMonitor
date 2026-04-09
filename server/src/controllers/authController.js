@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env.config.js";
 
+// todo: refactor exists controller
+
 const genToken = (userId) => {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: "5d" });
 };
