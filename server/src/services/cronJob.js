@@ -11,6 +11,14 @@ const pingmonitor = async (monitor) => {
   let statusCode = null;
   let responseTime = null;
 
+  // formate Date for mail
+  const currentDate = new Date();
+  const formateDate = currentDate.toLocaleString("en-US", {
+    timeZone: Log.timezone,
+    dateStyle: "medium",
+    timeStyle: "medium",
+  });
+
   try {
     const response = await axios.get(monitor.url, { timeout: 1000 });
     responseTime = Date.now() - start;
@@ -40,6 +48,7 @@ const pingmonitor = async (monitor) => {
           statusCode,
           responseTime,
           email: user.email,
+          formateDate,
         });
         console.log(
           `alert mail send to ${user.email} for monitor: ${monitor.name}`,

@@ -52,7 +52,12 @@ export default function Dashboard() {
   const handleAdd = async (formData) => {
     setFormLoading(true);
     try {
-      const { data } = await api.post("/monitors", formData);
+      // automatice detect timezone based on user browser
+      const timezoneUser = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const { data } = await api.post("/monitors", {
+        ...formData,
+        timezone: timezoneUser,
+      });
       const created = data?.monitor;
 
       if (created?._id) {
