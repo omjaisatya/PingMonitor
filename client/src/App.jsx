@@ -67,6 +67,7 @@ const AuthLoading = () => (
   </div>
 );
 
+// private
 const RequireAuth = ({ children }) => {
   const { user: activeUser, loading: isSessionResolving } = useAuth();
 
@@ -76,6 +77,7 @@ const RequireAuth = ({ children }) => {
   return activeUser ? children : <Navigate to="/login" replace />;
 };
 
+// public
 const RequireGuest = ({ children }) => {
   const { user: activeUser, loading: isSessionResolving } = useAuth();
 

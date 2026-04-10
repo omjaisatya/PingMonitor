@@ -147,8 +147,8 @@ To run this project, you will need to add the following environment variables to
 
 `VITE_APP_TITLE`
 
-> **Note:** Your Banckend hosted URL, i.e <https://www.domain.com/>.  
-> For Free Hosting, use Render.com
+> **Note:** Your Backend hosted URL, i.e <https://api.domain.com/>.  
+> For Free Hosting, you can use Render.com
 
 ## Cron WorkFlow: Backend
 
