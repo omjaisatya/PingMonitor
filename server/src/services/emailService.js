@@ -18,12 +18,15 @@ const mailTransporter = nodemailer.createTransport({
   },
 });
 
+// todo: add ejs for mail template
+
 const sendAlert = async ({
   monitorName,
   url,
   statusCode,
   responseTime,
   email,
+  formateDate,
 }) => {
   const mailOptions = {
     from: `"Ping Monitor" <${EMAIL_USE}`,
@@ -35,24 +38,24 @@ const sendAlert = async ({
         <p>Your monitored service has gone <strong>DOWN</strong>.</p>
         <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
           <tr>
-            <td style="padding: 8px; background: #f7f7f7; font-weight: bold;">Monitor</td>
+            <td style="padding: 8px;  font-weight: bold;">Monitor</td>
             <td style="padding: 8px;">${monitorName}</td>
           </tr>
           <tr>
-            <td style="padding: 8px; background: #f7f7f7; font-weight: bold;">URL</td>
+            <td style="padding: 8px;  font-weight: bold;">URL</td>
             <td style="padding: 8px;">${url}</td>
           </tr>
           <tr>
-            <td style="padding: 8px; background: #f7f7f7; font-weight: bold;">Status Code</td>
+            <td style="padding: 8px;  font-weight: bold;">Status Code</td>
             <td style="padding: 8px;">${statusCode || "No response"}</td>
           </tr>
           <tr>
-            <td style="padding: 8px; background: #f7f7f7; font-weight: bold;">Response Time</td>
+            <td style="padding: 8px;  font-weight: bold;">Response Time</td>
             <td style="padding: 8px;">${responseTime ? responseTime + "ms" : "N/A"}</td>
           </tr>
           <tr>
-            <td style="padding: 8px; background: #f7f7f7; font-weight: bold;">Time</td>
-            <td style="padding: 8px;">${new Date().toUTCString()}</td>
+            <td style="padding: 8px;  font-weight: bold;">Time</td>
+            <td style="padding: 8px;">${formateDate}</td>
           </tr>
         </table>
         <p style="margin-top: 20px; color: #666; font-size: 13px;">
