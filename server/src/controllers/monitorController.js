@@ -96,8 +96,8 @@ const updateMonitor = async (req, res) => {
   try {
     const { name, url, interval } = req.body;
 
-    if (url && validUrl(url)) {
-      res.status(400).json({ message: "Please provide valid URL" });
+    if (url && !validUrl(url)) {
+      return res.status(400).json({ message: "Please provide valid URL" });
     }
 
     if (url) {
@@ -108,7 +108,7 @@ const updateMonitor = async (req, res) => {
       });
 
       if (duplicateUrl) {
-        res.status(409).json({
+        return res.status(409).json({
           message: `You're already monitoring this URL ${duplicateUrl.name}`,
         });
       }
@@ -124,7 +124,9 @@ const updateMonitor = async (req, res) => {
         ...(url && { url: url.trim() }),
         ...(interval && { interval }),
       },
-      { new: true, runValidators: true },
+      // depreciated error message apears
+      // { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: "true" },
     );
 
     if (!monitor)
@@ -132,7 +134,7 @@ const updateMonitor = async (req, res) => {
         .status(404)
         .json({ message: "Monitor not found, try creating new monitor" });
 
-    res.status(200).json({ message: "Successfully Updated", monitor });
+    return res.status(200).json({ message: "Successfully Updated", monitor });
   } catch (error) {
     return res
       .status(500)
