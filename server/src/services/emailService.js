@@ -8,6 +8,11 @@ import {
   EMAIL_USE,
 } from "../config/env.config.js";
 
+// for deploy - getting error while sending mail
+// checking first
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
+
 const mailTransporter = nodemailer.createTransport({
   service: EMAIL_SERVICE,
   host: EMAIL_HOST,
