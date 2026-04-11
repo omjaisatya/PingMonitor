@@ -3,6 +3,7 @@ import {
   EMAIL_HOST,
   EMAIL_PASS,
   EMAIL_PORT,
+  EMAIL_SECURE,
   EMAIL_SERVICE,
   EMAIL_USE,
 } from "../config/env.config.js";
@@ -11,7 +12,7 @@ const mailTransporter = nodemailer.createTransport({
   service: EMAIL_SERVICE,
   host: EMAIL_HOST,
   port: EMAIL_PORT,
-  secure: true,
+  secure: EMAIL_SECURE,
   auth: {
     user: EMAIL_USE,
     pass: EMAIL_PASS,

@@ -20,6 +20,7 @@ const EMAIL_PORT = process.env.EMAIL_PORT;
 const EMAIL_SERVICE = process.env.EMAIL_SERVICE;
 const NODE_ENV = process.env.NODE_ENV;
 const FRONTEND_URL = process.env.FRONTEND_URL;
+const EMAIL_SECURE = process.env.EMAIL_SECURE;
 
 // export all config var
 export {
@@ -31,6 +32,7 @@ export {
   EMAIL_HOST,
   EMAIL_PORT,
   EMAIL_SERVICE,
+  EMAIL_SECURE,
   NODE_ENV,
   FRONTEND_URL,
 };
