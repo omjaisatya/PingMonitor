@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
 import { EMAIL_PASS, EMAIL_SERVICE, EMAIL_USE } from "../config/env.config.js";
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
 
 const mailTransporter = nodemailer.createTransport({
   service: EMAIL_SERVICE,
