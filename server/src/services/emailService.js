@@ -4,7 +4,10 @@ import dns from "dns";
 dns.setDefaultResultOrder("ipv4first");
 
 const mailTransporter = nodemailer.createTransport({
-  service: "Gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  requireTLS: true,
   auth: {
     user: EMAIL_USE,
     pass: EMAIL_PASS,
