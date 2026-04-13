@@ -134,12 +134,16 @@ To run this project, you will need to add the following environment variables to
 
 `JWT_SECRET`
 
-`EMAIL_USE`
+`EMAILJS_SERVICE_ID`
 
-`EMAIL_PASS`
+`EMAILJS_TEMPLATE_ID`
+
+`EMAILJS_PUBLIC_KEY`
+
+`EMAILJS_PRIVATE_KEY`
 
 > **Note:** Check `.env.example` for all available variables. Well-commented and easy to follow!
-> **Note:** For `EMAIL_USER` and `EMAIL_PASS` configuration, refer to the [Nodemailer Well-Known Services](https://nodemailer.com/smtp/well-known-services) documentation.
+> **Note:** This project temporarily uses [EmailJS](https://www.emailjs.com/) instead of Nodemailer due to deployment compatibility issues (Nodemailer works locally but fails on the current hosting environment). A more permanent solution is being investigated.
 
 ### 2. Client
 

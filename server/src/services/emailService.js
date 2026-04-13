@@ -1,17 +1,15 @@
-import nodemailer from "nodemailer";
-import { EMAIL_PASS, EMAIL_USE } from "../config/env.config.js";
+import emailjs from "@emailjs/nodejs";
+import {
+  EMAILJS_PRIVATE_KEY,
+  EMAILJS_PUBLIC_KEY,
+  EMAILJS_SERVICE_ID,
+  EMAILJS_TEMPLATE_ID,
+} from "../config/env.config.js";
 
-const mailTransporter = nodemailer.createTransport({
-  // testing mailtrap alternative for testing purpose
-  host: "sandbox.smtp.mailtrap.io",
-  port: 2525,
-  auth: {
-    user: EMAIL_USE,
-    pass: EMAIL_PASS,
-  },
+emailjs.init({
+  publicKey: EMAILJS_PUBLIC_KEY,
+  privateKey: EMAILJS_PRIVATE_KEY,
 });
-
-// todo: add ejs for mail template
 
 const sendAlert = async ({
   monitorName,
@@ -21,44 +19,26 @@ const sendAlert = async ({
   email,
   formateDate,
 }) => {
-  const mailOptions = {
-    from: `"Ping Monitor" <${EMAIL_USE}`,
-    to: email,
-    subject: `Ping Monitor - ${monitorName} is Down`,
-    html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 500px;">
-        <h2 style="color: #e53e3e;">⚠️ Monitor Alert</h2>
-        <p>Your monitored service has gone <strong>DOWN</strong>.</p>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
-          <tr>
-            <td style="padding: 8px;  font-weight: bold;">Monitor</td>
-            <td style="padding: 8px;">${monitorName}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px;  font-weight: bold;">URL</td>
-            <td style="padding: 8px;">${url}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px;  font-weight: bold;">Status Code</td>
-            <td style="padding: 8px;">${statusCode || "No response"}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px;  font-weight: bold;">Response Time</td>
-            <td style="padding: 8px;">${responseTime ? responseTime + "ms" : "N/A"}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px;  font-weight: bold;">Time</td>
-            <td style="padding: 8px;">${formateDate}</td>
-          </tr>
-        </table>
-        <p style="margin-top: 20px; color: #666; font-size: 13px;">
-          You'll be notified again if the status changes. - PingMonitor
-        </p>
-      </div>
-        `,
-  };
+  try {
+    const templateParms = {
+      to_email: email,
+      monitorName: monitorName,
+      url: url,
+      statusCode: statusCode || "No Response",
+      responseTime: responseTime ? responseTime + "ms" : "N/A",
+      formateDate: formateDate,
+    };
 
-  await mailTransporter.sendMail(mailOptions);
+    const response = await emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      templateParms,
+    );
+
+    console.log("Email Alert sent", response.status, response.text);
+  } catch (error) {
+    console.log("Failed to send Email Alert", error);
+  }
 };
 
 export default sendAlert;
