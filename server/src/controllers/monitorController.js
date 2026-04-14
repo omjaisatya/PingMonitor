@@ -142,6 +142,37 @@ const updateMonitor = async (req, res) => {
   }
 };
 
+// update isActive for pause features in monitor
+const pauseToggleMonitor = async (req, res) => {
+  try {
+    const monitor = await Monitor.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
+
+    if (!monitor)
+      return res
+        .status(404)
+        .json({ message: "Monitor not found, try creating one" });
+
+    monitor.isActive = !monitor.isActive;
+
+    if (!monitor.isActive) {
+      monitor.status = "unknown";
+    }
+
+    await monitor.save();
+    return res
+      .status(200)
+      .json({ message: "Successfully update monitor toggle", monitor });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to update toggle monitor",
+      error: error.message,
+    });
+  }
+};
+
 const deleteMonitor = async (req, res) => {
   try {
     const monitor = await Monitor.findOneAndDelete({
@@ -170,4 +201,5 @@ export {
   getMonitorById,
   updateMonitor,
   deleteMonitor,
+  pauseToggleMonitor,
 };

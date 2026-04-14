@@ -160,7 +160,7 @@ To run this project, you will need to add the following environment variables to
 Every 60 seconds
       │
       ▼
-Fetch all monitors from DB
+Fetch all monitors from DB (isActive) // if resume
       │
       ▼
 Ping each URL concurrently (10s timeout)

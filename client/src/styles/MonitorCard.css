@@ -77,17 +77,15 @@
   text-overflow: ellipsis;
 }
 
-.monitor-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .monitor-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.monitor-card-footer {
+  display: flex;
+  justify-content: end;
 }

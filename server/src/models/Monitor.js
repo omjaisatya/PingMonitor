@@ -29,6 +29,11 @@ const monitorSchema = new Schema(
       type: Number,
       default: 10,
     },
+    // pause
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
     timezone: { type: String, default: "UTC" },
   },
   { timestamps: true },

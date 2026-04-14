@@ -64,7 +64,7 @@ const pingmonitor = async (monitor) => {
 
   await Monitor.findByIdAndUpdate(monitor._id, { status });
   console.log(
-    `[${new Date().toISOString()}] ${monitor.name} → ${status.toUpperCase()} (${statusCode}) ${responseTime}ms`,
+    `[${new Date().toLocaleTimeString()}] ${monitor.name} → ${status.toUpperCase()} (${statusCode}) ${responseTime}ms`,
   );
 };
 
@@ -73,7 +73,7 @@ const startCron = () => {
     console.log("cron is started - checking monitor");
 
     try {
-      const monitors = await Monitor.find({});
+      const monitors = await Monitor.find({ isActive: true }); //only resume
 
       if (monitors.length === 0) {
         console.log("No monitor find");
