@@ -26,7 +26,6 @@ const logSchema = new Schema({
     type: Date,
     default: Date.now,
   },
-  timezone: { type: String, default: "UTC" },
   //logs automatically deleted
   createdAt: {
     type: Date,

@@ -29,6 +29,7 @@ const monitorSchema = new Schema(
       type: Number,
       default: 10,
     },
+    timezone: { type: String, default: "UTC" },
   },
   { timestamps: true },
 );

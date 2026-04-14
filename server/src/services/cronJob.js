@@ -14,7 +14,7 @@ const pingmonitor = async (monitor) => {
   // formate Date for mail
   const currentDate = new Date();
   const formateDate = currentDate.toLocaleString("en-US", {
-    timeZone: Log.timezone,
+    timeZone: Monitor.timezone,
     dateStyle: "medium",
     timeStyle: "medium",
   });
