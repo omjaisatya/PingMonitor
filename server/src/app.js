@@ -25,9 +25,6 @@ let corsOptions = {
 // middleware
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(limiter);
-app.use("/api/auth", routerAuth);
-app.use("/api/monitors", routerMon);
 
 // apihealth check
 app.use("/api", health);
@@ -36,6 +33,10 @@ app.use("/api", health);
 app.get("/", (req, res) => {
   res.json({ message: "Ping monitor is live" });
 });
+
+// protected
+app.use("/api/auth", limiter, routerAuth);
+app.use("/api/monitors", limiter, routerMon);
 
 // move error and global error handling in middleware
 app.use((req, res, next) => {
