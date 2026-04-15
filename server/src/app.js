@@ -17,6 +17,8 @@ const limiter = rateLimit({
 //initialize express
 const app = express();
 
+app.set("trust proxy", 1);
+
 let corsOptions = {
   origin: FRONTEND_URL,
   credentials: true,
