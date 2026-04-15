@@ -14,7 +14,8 @@ const validUrl = (string) => {
 
 const createMonitor = async (req, res) => {
   try {
-    const { name, url, interval } = req.body;
+    const { name, url, interval, timezone } = req.body;
+    console.log("recieved timezone", timezone);
 
     if (!name || !url) {
       return res
@@ -42,9 +43,12 @@ const createMonitor = async (req, res) => {
       name: name.trim(),
       url: url.trim(),
       interval: interval || 10,
+      timezone: timezone || "UTC",
     });
 
-    res.status(201).json({ message: "Monitor created", createMonitor });
+    return res
+      .status(201)
+      .json({ message: "Monitor created", monitor: createMonitor });
   } catch (error) {
     return res
       .status(400)

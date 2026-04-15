@@ -4,6 +4,15 @@ import routerMon from "./routes/monitorRoutes.js";
 import cors from "cors";
 import { FRONTEND_URL } from "./config/env.config.js";
 import health from "./routes/healthRoute.js";
+import { rateLimit } from "express-rate-limit";
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  message: "To many requests, Please try again",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 //initialize express
 const app = express();
@@ -16,6 +25,7 @@ let corsOptions = {
 // middleware
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(limiter);
 app.use("/api/auth", routerAuth);
 app.use("/api/monitors", routerMon);
 

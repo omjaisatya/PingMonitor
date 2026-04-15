@@ -58,6 +58,7 @@ export default function Dashboard() {
         ...formData,
         timezone: timezoneUser,
       });
+      // console.log(data.createMonitor.timezone);
       const created = data?.monitor;
 
       if (created?._id) {
