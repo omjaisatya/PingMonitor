@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import "../styles/Navbar.css";
-import AppName from "./AppName";
+import AppName from "../AppName";
 import logo from "../assets/logo.png";
 
 export default function Navbar() {

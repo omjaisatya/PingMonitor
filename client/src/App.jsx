@@ -5,7 +5,8 @@ import Dashboard from "./pages/Dashboard";
 import MonitorDetail from "./pages/MonitorDetail";
 import { useAuth } from "./context/useAuth";
 import { AuthProvider } from "./context/AuthProvider";
-import AppName from "./components/AppName";
+import AppName from "./AppName";
+import { ToastContainer } from "react-toastify";
 
 // todo: implement toastify external package for better error handling accross all page and component
 // todo: implement user profile page section where user can change their password or email.
@@ -133,6 +134,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <ApplicationRouter />
+        <ToastContainer theme="dark" />
       </BrowserRouter>
     </AuthProvider>
   );

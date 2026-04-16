@@ -28,7 +28,7 @@ apiClient.interceptors.response.use(
 
       localStorage.removeItem("pm-token");
       localStorage.removeItem("pm-user");
-      window.location.href = "/login";
+      // window.location.href = "/login";
     }
 
     return Promise.reject(networkError);

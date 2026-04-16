@@ -3,8 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
 import api from "../api/axios";
 import "../styles/LoginRegis.css";
-import AppName from "../components/AppName";
+import AppName from "../AppName";
 import logo from "../assets/logo.png";
+import { toast } from "react-toastify";
 
 export default function Register() {
   const { login: establishSession } = useAuth();
@@ -15,13 +16,10 @@ export default function Register() {
     email: "",
     password: "",
   });
-  const [registrationError, setRegistrationError] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
 
   const handleInputUpdate = (e) => {
     setNewUserPayload((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-    if (registrationError) setRegistrationError(null);
   };
 
   const executeRegistration = async (e) => {
@@ -30,13 +28,13 @@ export default function Register() {
     const { name, email, password } = newUserPayload;
 
     if (!name || !email || !password) {
-      setRegistrationError("All fields are required.");
+      toast.error("All fields are required");
       return;
     }
 
     // todo: implement a stronger password policy or add a strength meter (e.g., zxcvbn) post-MVP
     if (password.length < 6) {
-      setRegistrationError("Password must be at least 6 characters.");
+      toast.error("Password must be atleast 6 characters.");
       return;
     }
 
@@ -47,21 +45,20 @@ export default function Register() {
         "/auth/signup",
         newUserPayload,
       );
+      console.log("register data", authPayload);
 
       if (authPayload.newUser && authPayload.token) {
+        toast.success(authPayload.message);
         establishSession(authPayload.newUser, authPayload.token);
       } else {
         navigate("/login");
+        toast.error(authPayload.message);
       }
     } catch (err) {
-      console.error(
-        "RegisterComponent user signup failed ->",
-        err.response?.data,
-      );
-      setRegistrationError(
-        err.response?.data?.message ||
-          "Registration failed. Please check your connection and try again.",
-      );
+      toast.error(err.message, {
+        position: "top-right",
+        autoClose: true,
+      });
     } finally {
       setIsRegistering(false);
     }
@@ -119,10 +116,6 @@ export default function Register() {
               autoComplete="new-password"
             />
           </div>
-
-          {registrationError && (
-            <div className="alert alert-error">{registrationError}</div>
-          )}
 
           <button
             type="submit"

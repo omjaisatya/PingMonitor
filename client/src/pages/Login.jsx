@@ -3,28 +3,29 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/useAuth";
 import "../styles/LoginRegis.css";
-import AppName from "../components/AppName";
+import AppName from "../AppName";
 import logo from "../assets/logo.png";
+import { toast } from "react-toastify";
 
 export default function Login() {
   const { login: establishSession } = useAuth();
   const navigate = useNavigate();
 
   const [credentials, setCredentials] = useState({ email: "", password: "" });
-  const [authError, setAuthError] = useState(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   const handleInputUpdate = (e) => {
     setCredentials((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    // clear stale auth errors as soon as the user starts typing again
-    if (authError) setAuthError(null);
   };
 
   const executeLogin = async (e) => {
     e.preventDefault();
 
     if (!credentials.email || !credentials.password) {
-      setAuthError("Both email and password are required.");
+      toast.error("Both Email and Password are required", {
+        position: "top-right",
+        autoClose: true,
+      });
       return;
     }
 
@@ -33,14 +34,16 @@ export default function Login() {
     try {
       const { data: authPayload } = await api.post("/auth/login", credentials);
       establishSession(authPayload.user, authPayload.token);
+      toast.success(authPayload.message, {
+        position: "top-right",
+        autoClose: true,
+      });
       navigate("/dashboard");
     } catch (err) {
-      console.error("LoginComponent Auth request rejected ->", err);
-
-      setAuthError(
-        err.response?.data?.message ||
-          "Login failed. Please check your network.",
-      );
+      toast.error(err.response.data.message, {
+        position: "top-right",
+        autoClose: true,
+      });
     } finally {
       setIsAuthenticating(false);
     }
@@ -89,8 +92,6 @@ export default function Login() {
               autoComplete="current-password"
             />
           </div>
-
-          {authError && <div className="alert alert-error">{authError}</div>}
 
           <button
             type="submit"
