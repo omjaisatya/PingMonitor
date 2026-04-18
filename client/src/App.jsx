@@ -134,7 +134,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <ApplicationRouter />
-        <ToastContainer theme="dark" />
+        <ToastContainer theme="dark" stacked />
       </BrowserRouter>
     </AuthProvider>
   );

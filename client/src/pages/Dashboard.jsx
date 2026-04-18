@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Navbar from "../components/Navbar";
 import MonitorCard from "../components/MonitorCard";
 import MonitorFormModal from "../components/MonitorFormModal";
 import DeleteConfirmModal from "../components/DeleteConfModal";
 import api from "../api/axios";
+import { toast } from "react-toastify";
 
 // todo - implement websocket for prevent auto refresh page, first implement websocket in server then add here
 
@@ -14,66 +15,46 @@ export default function Dashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editMonitor, setEditMonitor] = useState(null);
   const [deleteMonitor, setDeleteMonitor] = useState(null);
-  const [toast, setToast] = useState(null);
-  const toastTimer = useRef(null);
-
-  const showToast = useCallback((message, type = "success") => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ message, type });
-    toastTimer.current = setTimeout(() => setToast(null), 3500);
-  }, []);
 
   const fetchMonitors = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await api.get("/monitors");
-
       const list = Array.isArray(data?.allMonitors) ? data.allMonitors : [];
-
       setMonitors(list);
     } catch (err) {
       const msg = err.response?.data?.message || "Failed to load monitors";
-      showToast(msg, "error");
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, []);
 
   // refresh auto data 1 minute
   useEffect(() => {
     fetchMonitors();
     const interval = setInterval(fetchMonitors, 60000);
-    return () => {
-      clearInterval(interval);
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    };
+    return () => clearInterval(interval);
   }, [fetchMonitors]);
 
   const handleAdd = async (formData) => {
     setFormLoading(true);
     try {
-      // automatice detect timezone based on user browser
       const timezoneUser = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const { data } = await api.post("/monitors", {
         ...formData,
         timezone: timezoneUser,
       });
-      // console.log(data.createMonitor.timezone);
-      const created = data?.monitor;
 
-      if (created?._id) {
-        setMonitors((prev) => [created, ...prev]);
-        showToast(`"${created.name}" is now being monitored`);
+      if (data?.monitor?._id) {
+        setMonitors((prev) => [data.monitor, ...prev]);
       } else {
         await fetchMonitors();
-        showToast("Monitor created");
       }
+      toast.success(data.message);
       setShowAddModal(false);
     } catch (err) {
-      showToast(
-        err.response?.data?.message || "Failed to create monitor",
-        "error",
-      );
+      toast.error(err.response?.data?.message || "Failed to create monitor");
     } finally {
       setFormLoading(false);
     }
@@ -83,23 +64,18 @@ export default function Dashboard() {
     setFormLoading(true);
     try {
       const { data } = await api.put(`/monitors/${editMonitor._id}`, formData);
-      const updated = data?.monitor;
 
-      if (updated?._id) {
+      if (data?.monitor?._id) {
         setMonitors((prev) =>
-          prev.map((m) => (m._id === editMonitor._id ? updated : m)),
+          prev.map((m) => (m._id === editMonitor._id ? data.monitor : m)),
         );
-        showToast(`"${updated.name}" updated`);
       } else {
         await fetchMonitors();
-        showToast("Monitor updated");
       }
+      toast.info(data.message);
       setEditMonitor(null);
     } catch (err) {
-      showToast(
-        err.response?.data?.message || "Failed to update monitor",
-        "error",
-      );
+      toast.error(err.response?.data?.message || "Failed to update monitor");
     } finally {
       setFormLoading(false);
     }
@@ -107,15 +83,13 @@ export default function Dashboard() {
 
   const handleDelete = async () => {
     setFormLoading(true);
-    const deletedId = deleteMonitor?._id;
-    const deletedName = deleteMonitor?.name;
     try {
-      await api.delete(`/monitors/${deletedId}`);
-      setMonitors((prev) => prev.filter((m) => m._id !== deletedId));
+      const { data } = await api.delete(`/monitors/${deleteMonitor._id}`);
+      setMonitors((prev) => prev.filter((m) => m._id !== deleteMonitor._id));
+      toast.success(data.message);
       setDeleteMonitor(null);
-      showToast(`"${deletedName}" deleted`);
-    } catch {
-      showToast("Failed to delete monitor", "error");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to delete monitor");
     } finally {
       setFormLoading(false);
     }
@@ -200,9 +174,9 @@ export default function Dashboard() {
         )}
       </main>
 
-      {toast && (
+      {/* {toast && (
         <div className={`toast alert alert-${toast.type}`}>{toast.message}</div>
-      )}
+      )} */}
 
       {showAddModal && (
         <MonitorFormModal
