@@ -1,198 +1,219 @@
-# PingMonitor : Server Uptime & API Monitoring System
+# PingMonitor
 
-PingMonitor is a complete full-stack application designed to monitor the uptime of URLs and APIs in the background. It features a robust REST API backend that pings services, logs response times, and sends email alerts upon downtime, paired with a dynamic React frontend for managing monitors and visualizing uptime data.
+> Full-stack URL & API uptime monitoring with real-time alerting and historical logging.
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/omjaisatya/PingMonitor)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/omjaisatya/PingMonitor)
 ![GitHub Created At](https://img.shields.io/github/created-at/omjaisatya/PingMonitor)
 ![GitHub repo size](https://img.shields.io/github/repo-size/omjaisatya/PingMonitor)
 
-## Project Structure
+## Overview
 
-```text
-PingMonitor/
-├── assets/
-│   └── logo.png
-├── client/   
-│   ├── src/
-│   ├── public/  
-│   ├── .gitignore
-│   ├── index.html
-│   ├── netlify.toml  //for optimize netlify build    
-│   ├── package-lock.json    
-│   ├── vite.config.js   
-│   └── package.json  
-└── server/ 
-│   ├── src/
-│   ├── .gitignore
-│   ├── server.js
-│   └── package.json
-└── .gitignore 
-└── README.md     
-```
+PingMonitor is a full-stack uptime monitoring system that continuously pings your URLs and APIs, logs response times and status codes, and sends targeted email alerts the moment a service goes down without spamming you when it's already down.
+
+The backend runs an automated cron job every 60 seconds against all registered monitors. The React frontend provides a clean dashboard to manage monitors and visualize historical uptime data.
+
+## Table of Contents
+
+- [Tech Stack](#tech-stack)
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [API Reference](#api-reference)
+- [Cron Workflow](#cron-workflow)
+- [Data Retention](#data-retention)
+- [Contributing](#contributing)
+- [Contact](#contact)
 
 ## Tech Stack
 
-### Frontend (`/client`)
+**Frontend** (`/client`)
 
-- **Framework:** React.js powered by Vite
-- **HTTP Client:** Axios (for API communication)
-- **Routing:** React Router DOM
+| Layer | Technology |
+| --- | --- |
+| Framework | React.js + Vite |
+| HTTP Client | Axios |
+| Routing | React Router DOM |
 
-### Backend (`/server`)
+**Backend** (`/server`)
 
-- **Runtime:** Node.js
-- **Framework:** Express.js
-- **Database:** MongoDB (Mongoose)
-- **Auth:** JWT + bcryptjs
-- **Scheduler:** node-cron
-- **Email:** Nodemailer
+| Layer | Technology |
+| --- | --- |
+| Runtime | Node.js |
+| Framework | Express.js |
+| Database | MongoDB (via Mongoose) |
+| Authentication | JWT + bcryptjs |
+| Scheduler | node-cron |
+| Email | Nodemailer / EmailJS |
+
+> Additional technologies and frameworks will be integrated in the future. Please refer to the actual repository for the latest stack.
 
 ## Features
 
-- **User Authentication:** Secure JWT-based signup, login, and protected routes.
-- **Dashboard UI:** Clean React interface to seamlessly add, view, update, and delete monitors.
-- **Automated Pinging:** Background cron job that pings all tracked URLs concurrently every minute.
-- **Detailed Logging:** Records status, HTTP status code, response time, and exact timestamp per ping.
-- **Smart Email Alerts:** Alerts are triggered *only* when a monitor's status flips from `UP` → `DOWN` to prevent spam.
-- **Auto Cleanup:** Logs are automatically cleared when a monitor is deleted.
+- **JWT Authentication** : Secure signup, login, and protected routes using JSON Web Tokens.
+- **Monitor Dashboard** : Intuitive React UI for creating, updating, and deleting URL monitors.
+- **Concurrent Pinging** : Background cron job pings all active monitors concurrently every 60 seconds (10s timeout).
+- **Detailed Logging** : Each ping records the HTTP status code, response time (ms), and exact timestamp.
+- **Smart Email Alerts** : Alerts fire only on `UP → DOWN` status transitions, preventing notification spam.
+- **Auto Cleanup** : All associated ping logs are deleted automatically when a monitor is removed.
+- **TTL-Based Log Retention** : Ping logs are automatically purged after 7 days via a MongoDB TTL index.
 
-## API Reference
+## Project Structure
 
-### Auth Routes
-
-| Method  | Endpoint               | Auth | Description               |
-|---------|------------------------|------|---------------------------|
-| POST    | `/api/auth/signup`     |  ✕   | Register a new user       |
-| POST    | `/api/auth/login`      |  ✕   | Login and get JWT token   |
-
-### Monitor Routes
-
-| Method  | Endpoint               | Auth | Description                       |
-|---------|------------------------|------|-----------------------------------|
-| POST    | `/api/monitors`        |  ✓   | Create a new monitor              |
-| GET     | `/api/monitors`        |  ✓   | Get all monitors for user         |
-| GET     | `/api/monitors/:id`    |  ✓   | Get one monitor                   |
-| PUT     | `/api/monitors/:id`    |  ✓   | Update monitor details            |
-| DELETE  | `/api/monitors/:id`    |  ✓   | Delete monitor and its logs       |
-
-## Run Locally
-
-Clone the project
-
-```bash
-  git clone https://github.com/omjaisatya/PingMonitor.git
+```txt
+PingMonitor/
+├── client/
+│   ├── public/
+│   ├── src/
+│   ├── index.html
+│   ├── netlify.toml
+│   ├── vite.config.js
+│   └── package.json
+├── server/
+│   ├── src/
+│   ├── server.js
+│   └── package.json
+├── .gitignore
+└── README.md
 ```
 
-Go to the project directory
+## Getting Started
+
+### Prerequisites
+
+- Node.js v18+
+- A running MongoDB instance (local or [MongoDB Atlas](https://www.mongodb.com/atlas))
+- An [EmailJS](https://www.emailjs.com/) account
+
+### 1. Clone the Repository
 
 ```bash
-  cd PingMonitor
+git clone https://github.com/omjaisatya/PingMonitor.git
+cd PingMonitor
 ```
 
-Install dependencies
-
-### 1. Backend Setup (`/server`)
-
-Open a terminal and navigate to the server directory:
+### 2. Backend Setup
 
 ```bash
 cd server
 npm install
 ```
 
-**Run the Server:**
+Create a `.env` file in `/server` (see [Environment Variables](#environment-variables)), then start the development server:
 
 ```bash
 npm run dev
 ```
 
-### 2. Frontend Setup (`/client`)
+The API will be available at `http://localhost:<PORT>`.
 
-Open a **new/separate terminal** and navigate to the client directory:
+### 3. Frontend Setup
+
+Open a **new terminal**, then:
 
 ```bash
 cd client
 npm install
-```
-
-**Run the Client:**
-
-```bash
 npm run dev
 ```
 
+The client will be available at `http://localhost:5173` by default.
+
 ## Environment Variables
 
-To run this project, you will need to add the following environment variables to your `.env` file
+Copy `.env.example` to `.env` in the relevant directory and fill in the values below.
 
-### 1. Backend
+### Backend (`/server/.env`)
 
-`PORT`
+| Variable | Description |
+| --- | --- |
+| `PORT` | Port for the Express server |
+| `MONGO_URI` | MongoDB connection string |
+| `JWT_SECRET` | Secret key for signing JWTs |
+| `EMAILJS_SERVICE_ID` | EmailJS service ID |
+| `EMAILJS_TEMPLATE_ID` | EmailJS template ID |
+| `EMAILJS_PUBLIC_KEY` | EmailJS public key |
+| `EMAILJS_PRIVATE_KEY` | EmailJS private key |
+| `NODE_ENV` | development |
+| `FRONTEND_URL` | <http://localhost:5173> |
 
-`MONGO_URI`
+> **Note on email delivery:** This project currently uses [EmailJS](https://www.emailjs.com/) instead of Nodemailer due to compatibility issues with the current hosting environment. Nodemailer functions correctly in local development, and a more permanent SMTP-based solution is being investigated.
 
-`JWT_SECRET`
+### Frontend (`/client/.env`)
 
-`EMAILJS_SERVICE_ID`
+| Variable | Description |
+| --- | --- |
+| `VITE_SERVER_URL` | Full URL of your deployed backend (e.g. `https://api.yourdomain.com/`) |
+| `VITE_APP_TITLE` | Application title displayed in the UI |
 
-`EMAILJS_TEMPLATE_ID`
+> For free hosting, the backend deploys cleanly on [Render](https://render.com) and the frontend on [Netlify](https://netlify.com).
 
-`EMAILJS_PUBLIC_KEY`
+## API Reference
 
-`EMAILJS_PRIVATE_KEY`
+All protected routes require an `Authorization: Bearer <token>` header.
 
-> **Note:** Check `.env.example` for all available variables. Well-commented and easy to follow!
-> **Note:** This project temporarily uses [EmailJS](https://www.emailjs.com/) instead of Nodemailer due to deployment compatibility issues (Nodemailer works locally but fails on the current hosting environment). A more permanent solution is being investigated.
+### Authentication
 
-### 2. Client
+| Method | Endpoint | Auth | Description |
+| --- | --- | --- | --- |
+| `POST` | `/api/auth/signup` | ✗ | Register a new user account |
+| `POST` | `/api/auth/login` | ✗ | Authenticate and receive a JWT |
 
-`VITE_SERVER_URL`
+### Monitors
 
-`VITE_APP_TITLE`
+| Method | Endpoint | Auth | Description |
+| -------- | ---------- | -------- | ----------- |
+| `POST` | `/api/monitors` | ✓ | Create a new monitor |
+| `GET` | `/api/monitors` | ✓ | List all monitors for the authenticated user |
+| `GET` | `/api/monitors/:id` | ✓ | Get a single monitor by ID |
+| `PUT` | `/api/monitors/:id` | ✓ | Update monitor configuration |
+| `PATCH` | `/api/monitors/:id/toggle` | ✓ | Update monitor toggle |
+| `DELETE` | `/api/monitors/:id` | ✓ | Delete a monitor and all associated logs |
 
-> **Note:** Your Backend hosted URL, i.e <https://api.domain.com/>.  
-> For Free Hosting, you can use Render.com
+## Cron Workflow
 
-## Cron WorkFlow: Backend
+The following diagram describes the backend ping cycle, which runs every 60 seconds:
 
 ```txt
 Every 60 seconds
       │
       ▼
-Fetch all monitors from DB (isActive) // if resume
+Fetch all active monitors from DB
       │
       ▼
 Ping each URL concurrently (10s timeout)
       │
       ├── 2xx / 3xx  →  status: "up"
-      └── 4xx / 5xx / timeout / no response  →  status: "down"
+      └── 4xx / 5xx / timeout / error  →  status: "down"
                               │
                               ▼
-                  Previous status wasn't "down"?
-                              │
-                        Yes → Send email alert
-                        No  → Skip (already notified)
+                  Was previous status NOT "down"?
+                        │               │
+                       Yes              No
+                        │               │
+                  Send email alert   Skip (already notified)
       │
       ▼
-Save Log + Update Monitor status
+Save log entry + update monitor status
 ```
 
-## Important
+## Data Retention
 
-### Data Retention
+To maintain performance and stay within MongoDB Atlas Free Tier storage limits (512 MB), ping logs use a **TTL (Time-To-Live) index**:
 
-To keep the application efficient and within the MongoDB Free Tier limits, we have implemented a **TTL (Time-To-Live) Index** on the Ping Logs collection.
+- **Retention period:** 7 days from creation
+- **Scope:** Ping log entries only monitor configurations and user accounts are stored in separate collections and are **not** affected by this policy.
+- **Rationale:** 7 days of historical data is sufficient for uptime trend analysis while keeping storage consumption minimal.
 
-- **Retention Period:** 7 Days
-- **Logic:** Each ping log is automatically deleted by MongoDB after 7 days of creation.
-- **Why?** This ensures that the 512MB storage limit is never exceeded while providing enough historical data for uptime charts.
-- **Note:** User account data and Monitor configurations are stored in separate collections and are **permanent**; they are not affected by this auto-deletion policy.
+## Contributing
+
+Contributions, bug reports, and feature requests are welcome. Please open an issue before submitting a pull request so the proposed change can be discussed first.
 
 ## Author
 
-- [@omjaisatya](https://www.github.com/omjaisatya)
+Built and maintained by [@omjaisatya](https://github.com/omjaisatya).
 
-## Feedback
+## Contact
 
-If you have any feedback, please reach out to us at <ping-monitor@outlook.com>
+For questions, feedback, or support, reach out at [ping-monitor@outlook.com](mailto:ping-monitor@outlook.com).
