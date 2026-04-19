@@ -363,39 +363,6 @@ select {
   }
 }
 
-/* alert */
-.alert {
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  border: 1px solid;
-  animation: slideIn 0.2s ease;
-}
-
-.alert-error {
-  background: var(--red-bg);
-  color: var(--red);
-  border-color: var(--red-border);
-}
-
-.alert-success {
-  background: var(--green-bg);
-  color: var(--green);
-  border-color: var(--green-border);
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* emplty state */
 .empty-state {
   text-align: center;

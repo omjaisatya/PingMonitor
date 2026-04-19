@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import MonitorFormModal from "../components/MonitorFormModal";
 import DeleteConfModal from "../components/DeleteConfModal";
 import api from "../api/axios";
+import { toast } from "react-toastify";
 
 const formatDate = (iso) => {
   const d = new Date(iso);
@@ -40,20 +41,16 @@ export default function MonitorDetails() {
   const [formLoading, setFormLoading] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const [toast, setToast] = useState(null);
-
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  };
 
   const fetchDetail = useCallback(async () => {
     try {
       const { data } = await api.get(`/monitors/${id}`);
       setMonitor(data.monitor);
       setLogs(data.logs);
-    } catch {
-      showToast("Failed to load monitor", "error");
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || err.message || "Failed to load monitor";
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -71,9 +68,10 @@ export default function MonitorDetails() {
       const { data } = await api.put(`/monitors/${id}`, formData);
       setMonitor(data.monitor);
       setShowEdit(false);
-      showToast("Monitor updated");
+      toast.success(data.message);
     } catch (err) {
-      showToast(err.response?.data?.message || "Update failed", "error");
+      const msg = err.response.data.message || err.message || "Update failed";
+      toast(msg);
     } finally {
       setFormLoading(false);
     }
@@ -82,11 +80,14 @@ export default function MonitorDetails() {
   const handleDelete = async () => {
     setFormLoading(true);
     try {
-      await api.delete(`/monitors/${id}`);
+      const data = await api.delete(`/monitors/${id}`);
       navigate("/dashboard");
-    } catch {
-      showToast("Delete failed", "error");
+      toast.success(data.data.message);
+    } catch (err) {
       setFormLoading(false);
+      const msg =
+        err.response?.data?.message || err.message || "Failed to delete";
+      toast.error(msg);
     }
   };
 
@@ -269,11 +270,6 @@ export default function MonitorDetails() {
           )}
         </div>
       </main>
-
-      {/* Toast */}
-      {toast && (
-        <div className={`toast alert alert-${toast.type}`}>{toast.message}</div>
-      )}
 
       {showEdit && (
         <MonitorFormModal

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import "../styles/MonitorCard.css";
 import { useState } from "react";
 import apiClient from "../api/axios";
+import { toast } from "react-toastify";
 
 export default function MonitorCard({ monitor, onEdit, onDelete }) {
   const [isActive, setIsActive] = useState(monitor.isActive);
@@ -12,10 +13,13 @@ export default function MonitorCard({ monitor, onEdit, onDelete }) {
   const handleToggleActive = async () => {
     isLoading(true);
     try {
-      await apiClient.patch(`/monitors/${monitor._id}/toggle`);
+      const api = await apiClient.patch(`/monitors/${monitor._id}/toggle`);
       setIsActive(!isActive);
+      toast.success(api.data.message);
     } catch (error) {
-      console.error("Failed to pause monitor", error.message);
+      const msg =
+        error.response?.data?.message || error.message || "Failed to update";
+      toast.error(msg);
     } finally {
       isLoading(false);
     }

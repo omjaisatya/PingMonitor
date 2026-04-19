@@ -23,7 +23,8 @@ export default function Dashboard() {
       const list = Array.isArray(data?.allMonitors) ? data.allMonitors : [];
       setMonitors(list);
     } catch (err) {
-      const msg = err.response?.data?.message || "Failed to load monitors";
+      const msg =
+        err.response?.data?.message || err.message || "Failed to load monitors";
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -54,7 +55,11 @@ export default function Dashboard() {
       toast.success(data.message);
       setShowAddModal(false);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to create monitor");
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to create monitor",
+      );
     } finally {
       setFormLoading(false);
     }
@@ -75,7 +80,11 @@ export default function Dashboard() {
       toast.info(data.message);
       setEditMonitor(null);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update monitor");
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to update monitor",
+      );
     } finally {
       setFormLoading(false);
     }
@@ -89,7 +98,11 @@ export default function Dashboard() {
       toast.success(data.message);
       setDeleteMonitor(null);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to delete monitor");
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to delete monitor",
+      );
     } finally {
       setFormLoading(false);
     }
