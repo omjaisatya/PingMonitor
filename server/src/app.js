@@ -8,7 +8,7 @@ import { rateLimit } from "express-rate-limit";
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 30,
+  limit: 120,
   message: "To many requests, Please try again",
   standardHeaders: true,
   legacyHeaders: false,
