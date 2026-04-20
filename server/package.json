@@ -1,6 +1,6 @@
 {
   "name": "com.pingmonitor.sp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "pingmonitor is monitoring url checking if server is down",
   "main": "server.js",
   "type": "module",
