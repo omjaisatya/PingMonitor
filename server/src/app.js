@@ -1,4 +1,5 @@
 import express from "express";
+import helmet from "helmet";
 import routerAuth from "./routes/authRoutes.js";
 import routerMon from "./routes/monitorRoutes.js";
 import cors from "cors";
@@ -23,6 +24,9 @@ let corsOptions = {
   origin: FRONTEND_URL,
   credentials: true,
 };
+
+// helment security middleware
+app.use(helmet);
 
 // middleware
 app.use(cors(corsOptions));

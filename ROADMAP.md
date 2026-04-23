@@ -111,7 +111,7 @@
   - All inputs are validated before processing
   - Invalid data returns clear error messages
 - Tasks:
-  - [ ] Implement Auth Validator
+  - [✓] Implement Auth Validator - (23/04/2026)
   - [ ] Implement Email Validator
   - [ ] Implement Monitors Validator
 
@@ -120,7 +120,7 @@
 - Description: Implement multiple security layers to protect backend from common attacks
 - Estimated effort: Medium
 - Tasks:
-  - [ ] Install and configure `helmet` for secure HTTP headers
+  - [✓] Install and configure `helmet` for secure HTTP headers - (23/04/2026)
   - [✓] Install and configure `express-rate-limit` for rate limiting on all routes
   - [✓] Install and configure `cors` with whitelist of allowed origins
   - [ ] Implement `express-mongo-sanitize` to prevent NoSQL injection attacks
