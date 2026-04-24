@@ -25,10 +25,10 @@
 
 - Description: Find and implement a reliable email service to replace nodemailer (currently using emailjs temporarily)
 - Tasks:
-  - [ ] Research email service alternatives (SendGrid, Mailgun, AWS SES, Resend)
-  - [ ] Set up chosen email service with API keys
+  - [✓] Research email service alternatives (SendGrid, Mailgun, AWS SES, Resend) - (24/04/2026)
+  - [✓] Set up chosen email service with API keys - (24/04/2026)
   - [ ] Implement email templates (verification, password reset, alerts)
-  - [ ] Replace emailjs with new service
+  - [✓] Replace emailjs with new service - (24/04/2026)
   - [ ] Test email delivery in production
   - [ ] Add email retry logic for failed sends
 
