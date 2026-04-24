@@ -26,7 +26,7 @@ let corsOptions = {
 };
 
 // helment security middleware
-app.use(helmet);
+app.use(helmet());
 
 // middleware
 app.use(cors(corsOptions));
