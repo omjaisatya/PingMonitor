@@ -1,0 +1,313 @@
+{
+  "info": {
+    "_postman_id": "bcc3f1ac-5e25-4fe5-ad6f-11776fe3457c",
+    "name": "PingMonitor",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "28297222"
+  },
+  "item": [
+    {
+      "name": "signup",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\": \"Api Test\",\r\n    \"email\": \"test@test.com\",\r\n    \"password\": \"test123456\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3006/api/auth/signup",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3006",
+          "path": [
+            "api",
+            "auth",
+            "signup"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "login",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"email\": \"test@test.com\",\r\n    \"password\": \"test123456\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3006/api/auth/login",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3006",
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "monitors",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZWIxMDEyMTY2ZTMyYmQ1MmI1NTExNiIsImlhdCI6MTc3NzAxMzU4MywiZXhwIjoxNzc3NDQ1NTgzfQ.ntKTLOvDeezyW36gtg47lKSeTb6U6BX9qdOeKPxmmuA",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\": \"Google\",\r\n    \"url\": \"https://google.com\",\r\n    \"interval\": 10\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3006/api/monitors",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3006",
+          "path": [
+            "api",
+            "monitors"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "monitors",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZWIxMDEyMTY2ZTMyYmQ1MmI1NTExNiIsImlhdCI6MTc3NzAxMzU4MywiZXhwIjoxNzc3NDQ1NTgzfQ.ntKTLOvDeezyW36gtg47lKSeTb6U6BX9qdOeKPxmmuA",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3006/api/monitors",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3006",
+          "path": [
+            "api",
+            "monitors"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "monitors",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZWIxMDEyMTY2ZTMyYmQ1MmI1NTExNiIsImlhdCI6MTc3NzAxMzU4MywiZXhwIjoxNzc3NDQ1NTgzfQ.ntKTLOvDeezyW36gtg47lKSeTb6U6BX9qdOeKPxmmuA",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3006/api/monitors/69eb1733166e32bd52b55197",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3006",
+          "path": [
+            "api",
+            "monitors",
+            "69eb1733166e32bd52b55197"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "monitors",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZWIxMDEyMTY2ZTMyYmQ1MmI1NTExNiIsImlhdCI6MTc3NzAxMzU4MywiZXhwIjoxNzc3NDQ1NTgzfQ.ntKTLOvDeezyW36gtg47lKSeTb6U6BX9qdOeKPxmmuA",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3006/api/monitors/69eb1733166e32bd52b55197",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3006",
+          "path": [
+            "api",
+            "monitors",
+            "69eb1733166e32bd52b55197"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "monitors",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZWIxMDEyMTY2ZTMyYmQ1MmI1NTExNiIsImlhdCI6MTc3NzAxMzU4MywiZXhwIjoxNzc3NDQ1NTgzfQ.ntKTLOvDeezyW36gtg47lKSeTb6U6BX9qdOeKPxmmuA",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"name\": \"Google\",\r\n    \"url\" : \"https://www.google.com\",\r\n    \"interval\" : 5\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3006/api/monitors/69eb1733166e32bd52b55197",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3006",
+          "path": [
+            "api",
+            "monitors",
+            "69eb1733166e32bd52b55197"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "monitors",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ZWIxMDEyMTY2ZTMyYmQ1MmI1NTExNiIsImlhdCI6MTc3NzAxMzU4MywiZXhwIjoxNzc3NDQ1NTgzfQ.ntKTLOvDeezyW36gtg47lKSeTb6U6BX9qdOeKPxmmuA",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "http://localhost:3006/api/monitors/69eb1733166e32bd52b55197/toggle",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3006",
+          "path": [
+            "api",
+            "monitors",
+            "69eb1733166e32bd52b55197",
+            "toggle"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

@@ -171,6 +171,8 @@ All protected routes require an `Authorization: Bearer <token>` header.
 | `PATCH` | `/api/monitors/:id/toggle` | ✓ | Update monitor toggle |
 | `DELETE` | `/api/monitors/:id` | ✓ | Delete a monitor and all associated logs |
 
+> For full details API Endpoint example , [see API Reference](./docs/apiReference.md)
+
 ## Cron Workflow
 
 The following diagram describes the backend ping cycle, which runs every 60 seconds:
