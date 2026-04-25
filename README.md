@@ -1,114 +1,119 @@
 # PingMonitor
 
-> Full-stack URL & API uptime monitoring with real-time alerting and historical logging.
+> Stop guessing if your services are down. Get instant alerts when they go offline.
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/omjaisatya/PingMonitor)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/w/omjaisatya/PingMonitor)
 ![GitHub Created At](https://img.shields.io/github/created-at/omjaisatya/PingMonitor)
 ![GitHub repo size](https://img.shields.io/github/repo-size/omjaisatya/PingMonitor)
 
-## Overview
+## What Is This?
 
-PingMonitor is a full-stack uptime monitoring system that continuously pings your URLs and APIs, logs response times and status codes, and sends targeted email alerts the moment a service goes down without spamming you when it's already down.
+PingMonitor is a straightforward uptime monitoring tool that watches your URLs and APIs around the clock. Every 60 seconds, it pings each of your monitored services, logs response times and status codes, and emails you the *moment* something goes wrong without spamming you with duplicate alerts.
 
-The backend runs an automated cron job every 60 seconds against all registered monitors. The React frontend provides a clean dashboard to manage monitors and visualize historical uptime data.
+Think of it as a lightweight alternative to paid uptime monitoring services, completely open source and ready to run on free tiers (MongoDB Atlas, Resend, Render, Netlify).
+
+## Getting Started in 5 Minutes
+
+Clone the repo, install dependencies, and run both the backend and frontend locally:
+
+```bash
+git clone https://github.com/omjaisatya/PingMonitor.git
+cd PingMonitor
+
+# Terminal 1: Start the backend
+cd server
+npm install
+npm run dev
+
+# Terminal 2: Start the frontend
+cd ../client
+npm install
+npm run dev
+
+# Open http://localhost:5173 in your browser
+```
+
+That's it. You're ready to create your first monitor.
 
 ## Table of Contents
 
+- [How It Works](#how-it-works)
+- [Features at a Glance](#features-at-a-glance)
 - [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
+- [Full Setup Guide](#full-setup-guide)
 - [Environment Variables](#environment-variables)
-- [API Reference](#api-reference)
+- [API Endpoints](#api-endpoints)
 - [Cron Workflow](#cron-workflow)
-- [Data Retention](#data-retention)
+- [Data & Storage](#data--storage)
 - [Contributing](#contributing)
-- [Contact](#contact)
+
+## How It Works
+
+**Backend**: A scheduled cron job wakes up every 60 seconds, checks all your active monitors in parallel, records the results, and fires off email alerts if anything changed status from up → down.
+
+**Frontend**: A clean React dashboard lets you manage monitors, view uptime, and toggle monitoring on/off without ever touching a terminal.
+
+## Features at a Glance
+
+**Secure Authentication**: JWT-based login with bcrypt password hashing  
+**Real-Time Monitoring** : Concurrent pings every 60 seconds with 10-second timeouts  
+**Detailed Logging** : HTTP status codes, response times (ms), exact timestamps  
+**Smart Alerts** : Email notifications only on status changes (no spam)  
+**Auto Cleanup** : Delete a monitor, and all its logs disappear with it  
+**Auto Data Purge** : Logs older than 7 days are automatically removed  
+**Free & Open Source** : Run entirely on free tiers; no credit card needed
 
 ## Tech Stack
 
-**Frontend** (`/client`)
+| Component | Technology |
+|----------|----------|
+| **Frontend** | React.js + Vite + Axios + React Router |
+| **Backend** | Node.js + Express.js + MongoDB (Mongoose) |
+| **Authentication** | JWT + bcryptjs |
+| **Scheduler** | node-cron |
+| **Email** | Resend |
 
-| Layer | Technology |
-| --- | --- |
-| Framework | React.js + Vite |
-| HTTP Client | Axios |
-| Routing | React Router DOM |
-
-**Backend** (`/server`)
-
-| Layer | Technology |
-| --- | --- |
-| Runtime | Node.js |
-| Framework | Express.js |
-| Database | MongoDB (via Mongoose) |
-| Authentication | JWT + bcryptjs |
-| Scheduler | node-cron |
-| Email | Nodemailer / EmailJS |
+All services used are **free tier** with no credit card required (except MongoDB Atlas, which is genuinely free up to 512 MB).
 
 > Additional technologies and frameworks will be integrated in the future. Please refer to the actual repository for the latest stack.
 
-## Features
-
-- **JWT Authentication** : Secure signup, login, and protected routes using JSON Web Tokens.
-- **Monitor Dashboard** : Intuitive React UI for creating, updating, and deleting URL monitors.
-- **Concurrent Pinging** : Background cron job pings all active monitors concurrently every 60 seconds (10s timeout).
-- **Detailed Logging** : Each ping records the HTTP status code, response time (ms), and exact timestamp.
-- **Smart Email Alerts** : Alerts fire only on `UP → DOWN` status transitions, preventing notification spam.
-- **Auto Cleanup** : All associated ping logs are deleted automatically when a monitor is removed.
-- **TTL-Based Log Retention** : Ping logs are automatically purged after 7 days via a MongoDB TTL index.
-
-## Project Structure
-
-```txt
-PingMonitor/
-├── client/
-│   ├── public/
-│   ├── src/
-│   ├── index.html
-│   ├── netlify.toml
-│   ├── vite.config.js
-│   └── package.json
-├── server/
-│   ├── src/
-│   ├── server.js
-│   └── package.json
-├── .gitignore
-└── README.md
-```
-
-## Getting Started
+## Full Setup Guide
 
 ### Prerequisites
 
-- Node.js v18+
-- A running MongoDB instance (local or [MongoDB Atlas](https://www.mongodb.com/atlas))
-- An [EmailJS](https://www.emailjs.com/) account
+- **Node.js v18+** - [Install here](https://nodejs.org/)
+- **MongoDB** - Either local or free cloud via [MongoDB Atlas](https://www.mongodb.com/atlas)
+- **Resend Account** - For email alerts via [Resend](https://www.resend.com/)
 
-### 1. Clone the Repository
+### 1. Clone & Navigate
 
 ```bash
 git clone https://github.com/omjaisatya/PingMonitor.git
 cd PingMonitor
 ```
 
-### 2. Backend Setup
+### 2. Set Up the Backend
 
 ```bash
 cd server
 npm install
 ```
 
-Create a `.env` file in `/server` (see [Environment Variables](#environment-variables)), then start the development server:
+Create a `.env` file in the `/server` directory (see the [Environment Variables](#environment-variables) section below), then start the development server:
 
 ```bash
 npm run dev
 ```
 
-The API will be available at `http://localhost:<PORT>`.
+You should see:
 
-### 3. Frontend Setup
+```txt
+Server running on http://localhost:<your-PORT>
+Connected to MongoDB
+```
+
+### 3. Set Up the Frontend
 
 Open a **new terminal**, then:
 
@@ -118,60 +123,67 @@ npm install
 npm run dev
 ```
 
-The client will be available at `http://localhost:5173` by default.
+Navigate to `http://localhost:5173` in your browser. You should see the PingMonitor login page.
+
+### 4. Create an Account & Start Monitoring
+
+- Sign up with any email and password
+- Click "Create Monitor" and add your first URL (e.g., `https://google.com`)
+- Watch the dashboard update as monitors are pinged
+- You'll receive email alerts when services go down
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` in the relevant directory and fill in the values below.
+Copy `.env.example` to `.env` in each directory and fill in your values. All services are free tier.
 
-### Backend (`/server/.env`)
+### Backend (`.env`)
 
-| Variable | Description |
-| --- | --- |
-| `PORT` | Port for the Express server |
-| `MONGO_URI` | MongoDB connection string |
-| `JWT_SECRET` | Secret key for signing JWTs |
-| `EMAILJS_SERVICE_ID` | EmailJS service ID |
-| `EMAILJS_TEMPLATE_ID` | EmailJS template ID |
-| `EMAILJS_PUBLIC_KEY` | EmailJS public key |
-| `EMAILJS_PRIVATE_KEY` | EmailJS private key |
-| `NODE_ENV` | development |
-| `FRONTEND_URL` | <http://localhost:5173> |
+| Variable | Example | Notes |
+|----------|---------|-------|
+| `PORT` | `5000` | Express server port |
+| `MONGO_URI` | `mongodb+srv://user:pass@cluster.mongodb.net/pingmonitor` | MongoDB Atlas connection string |
+| `JWT_SECRET` | `your-random-secret-key-here` | Keep this private; used to sign JWTs |
+| `RESEND_API_KEY` | `re_xxxxxxxxxxxxxx` | Get from [Resend Dashboard](https://resend.com) |
+| `SENDER_EMAIL` | `noreply@yourdomain.com` | Must be verified in Resend |
+| `NODE_ENV` | `development` | Set to `production` when deployed |
+| `FRONTEND_URL` | `http://localhost:5173` | Where your React app runs |
 
-> **Note on email delivery:** This project currently uses [EmailJS](https://www.emailjs.com/) instead of Nodemailer due to compatibility issues with the current hosting environment. Nodemailer functions correctly in local development, and a more permanent SMTP-based solution is being investigated.
+**Email Setup**: By default, PingMonitor uses **Resend**. If you prefer SMTP (e.g., Gmail, other mail provider), see [`./docs/nodemailer-setup.md`](./docs/nodemailer-setup.md).
 
-### Frontend (`/client/.env`)
+### Frontend (`.env`)
 
-| Variable | Description |
-| --- | --- |
-| `VITE_SERVER_URL` | Full URL of your deployed backend (e.g. `https://api.yourdomain.com/`) |
-| `VITE_APP_TITLE` | Application title displayed in the UI |
+| Variable | Example | Notes |
+|----------|---------|-------|
+| `VITE_SERVER_URL` | `http://localhost:5000` or `https://api.yourdomain.com` | Full URL of your backend |
+| `VITE_APP_TITLE` | `PingMonitor` | Title shown in browser tab |
 
-> For free hosting, the backend deploys cleanly on [Render](https://render.com) and the frontend on [Netlify](https://netlify.com).
+## API Endpoints
 
-## API Reference
+All endpoints except `/auth/signup` and `/auth/login` require:
 
-All protected routes require an `Authorization: Bearer <token>` header.
+```txt
+Authorization: Bearer <your-jwt-token>
+```
 
-### Authentication
+### Authentication (No Auth Required)
 
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| `POST` | `/api/auth/signup` | ✗ | Register a new user account |
-| `POST` | `/api/auth/login` | ✗ | Authenticate and receive a JWT |
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/api/auth/signup` | Create a new account |
+| `POST` | `/api/auth/login` | Log in and receive JWT |
 
-### Monitors
+### Monitor Management (Auth Required)
 
-| Method | Endpoint | Auth | Description |
-| -------- | ---------- | -------- | ----------- |
-| `POST` | `/api/monitors` | ✓ | Create a new monitor |
-| `GET` | `/api/monitors` | ✓ | List all monitors for the authenticated user |
-| `GET` | `/api/monitors/:id` | ✓ | Get a single monitor by ID |
-| `PUT` | `/api/monitors/:id` | ✓ | Update monitor configuration |
-| `PATCH` | `/api/monitors/:id/toggle` | ✓ | Update monitor toggle |
-| `DELETE` | `/api/monitors/:id` | ✓ | Delete a monitor and all associated logs |
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/api/monitors` | Create a new monitor |
+| `GET` | `/api/monitors` | List all your monitors |
+| `GET` | `/api/monitors/:id` | Get details of one monitor |
+| `PUT` | `/api/monitors/:id` | Update monitor settings |
+| `PATCH` | `/api/monitors/:id/toggle` | Turn monitoring on/off |
+| `DELETE` | `/api/monitors/:id` | Delete monitor + all logs |
 
-> For full details API Endpoint example , [see API Reference](./docs/apiReference.md)
+For request/response examples, see [`./docs/apiReference.md`](./docs/apiReference.md).
 
 ## Cron Workflow
 
@@ -200,13 +212,38 @@ Ping each URL concurrently (10s timeout)
 Save log entry + update monitor status
 ```
 
-## Data Retention
+This approach ensures you get notified immediately when something breaks, but not spammed if it stays broken.
 
-To maintain performance and stay within MongoDB Atlas Free Tier storage limits (512 MB), ping logs use a **TTL (Time-To-Live) index**:
+## Data & Storage
 
-- **Retention period:** 7 days from creation
-- **Scope:** Ping log entries only monitor configurations and user accounts are stored in separate collections and are **not** affected by this policy.
-- **Rationale:** 7 days of historical data is sufficient for uptime trend analysis while keeping storage consumption minimal.
+### How Long Are Logs Kept?
+
+- **Retention period**: 7 days
+- **Scope**: Only ping logs are purged; monitor configurations and user accounts persist forever
+- **Why 7 days?**: It's enough time to spot trends and patterns in uptime without consuming too much storage (important for the free MongoDB Atlas tier)
+
+### Automatic Cleanup
+
+- Delete a monitor → All its associated logs are deleted immediately
+- Logs older than 7 days → Automatically removed every day via MongoDB TTL index
+
+This keeps your database lean and your dashboard snappy.
+
+## Deploying to Production
+
+### Backend (Render)
+
+1. Push your code to GitHub
+2. Create a new Web Service on [Render.com](https://render.com)
+3. Connect your GitHub repo
+4. Add the environment variables from `.env`
+5. Deploy (Render auto-rebuilds on push)
+
+### Frontend (Netlify)
+
+1. Build the React app: `npm run build` in `/client`
+2. Deploy the `dist/` folder to [Netlify](https://netlify.com) (drag & drop or connect GitHub)
+3. Set `VITE_SERVER_URL` to your Render backend URL in Netlify's environment variables
 
 ## Contributing
 
@@ -214,8 +251,4 @@ Contributions, bug reports, and feature requests are welcome. Please open an iss
 
 ## Author
 
-Built and maintained by [@omjaisatya](https://github.com/omjaisatya).
-
-## Contact
-
-For questions, feedback, or support, reach out at [ping-monitor@outlook.com](mailto:ping-monitor@outlook.com).
+Built and maintained by [@omjaisatya](https://github.com/omjaisatya).Licensed under MIT.
