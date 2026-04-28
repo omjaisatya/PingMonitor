@@ -6,7 +6,13 @@ const validate = (req, res, next) => {
   const error = validationResult(req);
 
   if (!error.isEmpty()) {
-    return res.status(400).json({ error: error.array() });
+    return res.status(400).json({
+      message: "Validation failed",
+      error: error.array().map((err) => ({
+        field: err.param,
+        message: err.msg,
+      })),
+    });
   }
 
   next();

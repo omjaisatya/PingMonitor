@@ -1,31 +1,10 @@
 import Log from "../models/Log.js";
 import Monitor from "../models/Monitor.js";
 
-// User store duplicate url, to prevent this implement valid
-
-const validUrl = (string) => {
-  try {
-    new URL(string);
-    return true;
-  } catch (error) {
-    return false;
-  }
-};
-
 const createMonitor = async (req, res) => {
   try {
     const { name, url, interval, timezone } = req.body;
     console.log("recieved timezone", timezone);
-
-    if (!name || !url) {
-      return res
-        .status(400)
-        .json({ message: "Enter name and URL, must required" });
-    }
-
-    if (!validUrl(url)) {
-      return res.status(400).json({ message: "Please provide valid URL" });
-    }
 
     const checkUrl = await Monitor.findOne({
       userId: req.user._id,
@@ -99,10 +78,6 @@ const getMonitorById = async (req, res) => {
 const updateMonitor = async (req, res) => {
   try {
     const { name, url, interval } = req.body;
-
-    if (url && !validUrl(url)) {
-      return res.status(400).json({ message: "Please provide valid URL" });
-    }
 
     if (url) {
       const duplicateUrl = await Monitor.findOne({

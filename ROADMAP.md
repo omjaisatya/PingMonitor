@@ -25,10 +25,10 @@
 
 - Description: Find and implement a reliable email service to replace nodemailer (currently using emailjs temporarily)
 - Tasks:
-  - [✓] Research email service alternatives (SendGrid, Mailgun, AWS SES, Resend) - (24/04/2026)
-  - [✓] Set up chosen email service with API keys - (24/04/2026)
+  - [x] Research email service alternatives (SendGrid, Mailgun, AWS SES, Resend) - (24/04/2026)
+  - [x] Set up chosen email service with API keys - (24/04/2026)
   - [ ] Implement email templates (verification, password reset, alerts)
-  - [✓] Replace emailjs with new service - (24/04/2026)
+  - [x] Replace emailjs with new service - (24/04/2026)
   - [ ] Test email delivery in production
   - [ ] Add email retry logic for failed sends
 
@@ -111,19 +111,19 @@
   - All inputs are validated before processing
   - Invalid data returns clear error messages
 - Tasks:
-  - [✓] Implement Auth Validator - (23/04/2026)
-  - [ ] Implement Email Validator
-  - [ ] Implement Monitors Validator
+  - [x] Implement Auth Validator - (23/04/2026)
+  - [x] Implement Email Validator - (23/04/2026)
+  - [x] Implement Monitors Validator - (28/04/2026)
 
 ### Advanced Express Security Hardening
 
 - Description: Implement multiple security layers to protect backend from common attacks
 - Estimated effort: Medium
 - Tasks:
-  - [✓] Install and configure `helmet` for secure HTTP headers - (23/04/2026)
-  - [✓] Install and configure `express-rate-limit` for rate limiting on all routes
-  - [✓] Install and configure `cors` with whitelist of allowed origins
-  - [ ] Implement `express-mongo-sanitize` to prevent NoSQL injection attacks
+  - [x] Install and configure `helmet` for secure HTTP headers - (23/04/2026)
+  - [x] Install and configure `express-rate-limit` for rate limiting on all routes
+  - [x] Install and configure `cors` with whitelist of allowed origins
+  - [ ] Implement `mongo sanitize` to prevent NoSQL injection attacks
   - [ ] Install and configure `express-validator` for input validation and sanitization
   - [ ] Add CSRF protection using `csurf` middleware
   - [ ] Implement request body size limits to prevent payload attacks
@@ -253,4 +253,5 @@
 
 ## Completed ✓
 
-- [✓ ] Implemented Pause/Resume Monitor (14/04/2026)
+- [x] Implemented Pause/Resume Monitor (14/04/2026)
+- [x] Express Validation (auth,monitor)

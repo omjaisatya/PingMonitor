@@ -10,15 +10,22 @@ import {
   pauseToggleMonitor,
 } from "../controllers/monitorController.js";
 
+import {
+  createMonitorValidate,
+  updateMonitorValidate,
+  validateMonitorID,
+} from "../validators/monitorVal.js";
+import validate from "../validators/validate.js";
+
 const router = express.Router();
 
 router.use(protect);
 
 router.get("/", getMonitors);
-router.post("/", createMonitor);
-router.get("/:id", getMonitorById);
-router.put("/:id", updateMonitor);
-router.patch("/:id/toggle", pauseToggleMonitor);
-router.delete("/:id", deleteMonitor);
+router.post("/", createMonitorValidate, validate, createMonitor);
+router.get("/:id", validateMonitorID, validate, getMonitorById);
+router.put("/:id", updateMonitorValidate, validate, updateMonitor);
+router.patch("/:id/toggle", validateMonitorID, validate, pauseToggleMonitor);
+router.delete("/:id", validateMonitorID, validate, deleteMonitor);
 
 export default router;
