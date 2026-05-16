@@ -1,7 +1,9 @@
 import express from "express";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import routerAuth from "./routes/authRoutes.js";
 import routerMon from "./routes/monitorRoutes.js";
+import routerProfile from "./routes/profileRoutes.js";
 import cors from "cors";
 import { FRONTEND_URL } from "./config/env.config.js";
 import health from "./routes/healthRoute.js";
@@ -27,10 +29,24 @@ let corsOptions = {
 
 // helment security middleware
 app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'", FRONTEND_URL],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+    },
+  }),
+);
 
 // middleware
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
+app.use(cookieParser());
 
 // apihealth check
 app.use("/api", health);
@@ -42,6 +58,7 @@ app.get("/", (req, res) => {
 
 // protected
 app.use("/api/auth", limiter, routerAuth);
+app.use("/api/auth/profile", limiter, routerProfile);
 app.use("/api/monitors", limiter, routerMon);
 
 // move error and global error handling in middleware

@@ -19,6 +19,9 @@ const NODE_ENV = process.env.NODE_ENV;
 const FRONTEND_URL = process.env.FRONTEND_URL;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SENDER_EMAIL = process.env.SENDER_EMAIL;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+const ACCESS_TOKEN_EXPIRY = process.env.ACCESS_TOKEN_EXPIRY;
+const REFRESH_TOKEN_EXPIRY = process.env.REFRESH_TOKEN_EXPIRY;
 
 // export all config var
 export {
@@ -29,4 +32,7 @@ export {
   FRONTEND_URL,
   RESEND_API_KEY,
   SENDER_EMAIL,
+  JWT_REFRESH_SECRET,
+  ACCESS_TOKEN_EXPIRY,
+  REFRESH_TOKEN_EXPIRY,
 };

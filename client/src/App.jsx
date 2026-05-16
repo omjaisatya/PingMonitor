@@ -3,10 +3,12 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import MonitorDetail from "./pages/MonitorDetail";
-import { useAuth } from "./context/useAuth";
+import { useAuth } from "./hook/useAuth";
 import { AuthProvider } from "./context/AuthProvider";
 import AppName from "./AppName";
 import { ToastContainer } from "react-toastify";
+import UserProfile from "./components/UserProfile";
+import { useSessionSecurity } from "./hook/useSessionSecurity";
 
 // todo: implement toastify external package for better error handling accross all page and component
 // todo: implement user profile page section where user can change their password or email.
@@ -70,9 +72,9 @@ const AuthLoading = () => (
 
 // private
 const RequireAuth = ({ children }) => {
-  const { user: activeUser, loading: isSessionResolving } = useAuth();
+  const { isAuthenticated: activeUser, loading: isSessionResolving } =
+    useAuth();
 
-  // todo - add loading in return swap null
   if (isSessionResolving) return <AuthLoading />;
 
   return activeUser ? children : <Navigate to="/login" replace />;
@@ -80,11 +82,17 @@ const RequireAuth = ({ children }) => {
 
 // public
 const RequireGuest = ({ children }) => {
-  const { user: activeUser, loading: isSessionResolving } = useAuth();
+  const { isAuthenticated: activeUser, loading: isSessionResolving } =
+    useAuth();
 
   if (isSessionResolving) return <AuthLoading />;
 
   return !activeUser ? children : <Navigate to="/dashboard" replace />;
+};
+
+const SecurityLayer = () => {
+  useSessionSecurity();
+  return null;
 };
 
 const ApplicationRouter = () => (
@@ -125,6 +133,15 @@ const ApplicationRouter = () => (
       }
     />
 
+    <Route
+      path="/profile"
+      element={
+        <RequireAuth>
+          <UserProfile />
+        </RequireAuth>
+      }
+    />
+
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
   </Routes>
 );
@@ -133,8 +150,21 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <SecurityLayer />
         <ApplicationRouter />
-        <ToastContainer theme="dark" stacked />
+        <ToastContainer
+          theme="dark"
+          stacked
+          position="top-right"
+          autoClose={4000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          draggable
+          pauseOnFocusLoss
+          pauseOnHover
+        />
       </BrowserRouter>
     </AuthProvider>
   );

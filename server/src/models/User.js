@@ -22,6 +22,14 @@ const userSchema = new Schema(
       minlength: 6,
       required: [true, "Password is required and minimum length 6"],
     },
+    // auth security
+    refreshTokenHash: { type: String, default: null },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date, default: null },
+
+    // account state
+    isDeactivated: { type: Boolean, default: false },
+    deactivatedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

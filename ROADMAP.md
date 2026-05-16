@@ -98,10 +98,10 @@
   - Password reset uses time-limited tokes
 - Tasks:
   - [ ] Implement User Account Verifications when user isn't verified.
-  - [ ] Implement Add an option to delete account if user wants.
+  - [x] Implement Add an option to delete account if user wants. - (16/05/2026)
   - [ ] Implement Recovery Password
-  - [ ] Implement Update User Profile
-  - [ ] Implement Change Password
+  - [x] Implement Update User Profile - (16/05/2026)
+  - [x] Implement Change Password - (16/05/2026)
 
 ### Validators
 
@@ -125,7 +125,7 @@
   - [x] Install and configure `cors` with whitelist of allowed origins
   - [ ] Implement `mongo sanitize` to prevent NoSQL injection attacks
   - [ ] Install and configure `express-validator` for input validation and sanitization
-  - [ ] Add CSRF protection using `csurf` middleware
+  - [x] Add CSRF protection using `csurf` middleware - (16/05/2026)
   - [ ] Implement request body size limits to prevent payload attacks
   - [ ] Add `hpp` (HTTP Parameter Pollution) protection middleware
   - [ ] Enable HTTPS only in production (redirect HTTP to HTTPS)

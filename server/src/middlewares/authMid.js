@@ -1,9 +1,7 @@
-import jwt from "jsonwebtoken";
 import User from "../models/User.js";
-import { JWT_SECRET } from "../config/env.config.js";
+import { verifyAccessToken } from "../../utils/tokenCofig.js";
+import { isTokenBlacklisted } from "../../utils/tokenBlacklist.js";
 
-// for protecting private routes - user home,
-// todo - implement cookies
 const protect = async (req, res, next) => {
   try {
     const authHead = req.headers.authorization;
@@ -12,8 +10,13 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: "Auth failed" });
     }
 
-    const token = authHead.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const accessToken = authHead.split(" ")[1];
+
+    if (isTokenBlacklisted(accessToken)) {
+      return res.status(401).json({ message: "Token has been revoked" });
+    }
+
+    const decoded = verifyAccessToken(accessToken);
 
     const user = await User.findById(decoded.id).select("-password");
 
@@ -21,9 +24,23 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: "User no longer exists" });
     }
 
+    if (user.isDeactivated) {
+      return res.status(403).json({
+        message: "Account is deactivated",
+        code: "ACCOUNT_DEACTIVATED",
+      });
+    }
+
     req.user = user;
+    req.token = accessToken;
     next();
   } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        message: "Access token expired",
+        code: "TOKEN_EXPIRED",
+      });
+    }
     return res.status(401).json({ message: "Invalid token" });
   }
 };

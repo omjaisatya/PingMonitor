@@ -1,12 +1,37 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "../config/env.config.js";
+import {
+  generateTokenPair,
+  hashToken,
+  verifyRefreshToken,
+} from "../../utils/tokenCofig.js";
+import crypto from "crypto";
+import { blacklistToken } from "../../utils/tokenBlacklist.js";
 
-// todo: refactor exists controller
+const REFRESH_TOKEN_COOKIE_NAME = "pm_refresh_token";
 
-const genToken = (userId) => {
-  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: "5d" });
+const MAX_ATTEMPTS = 5;
+const LOCK_DURATION = 30 * 60 * 1000;
+
+const refreshCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: "/",
+});
+
+const generateCsrfToken = () => crypto.randomBytes(32).toString("hex");
+
+const setCsrfCookie = (res) => {
+  const csrfToken = generateCsrfToken();
+  res.cookie("pm_csrf_token", csrfToken, {
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: "/",
+  });
 };
 
 const signup = async (req, res) => {
@@ -21,6 +46,7 @@ const signup = async (req, res) => {
         .json({ message: "Email is already used, try signin" });
     }
 
+    // todo: implement seperate reusable hashing password
     // hashing password (Encrypt)
     const hashPass = await bcrypt.hash(password, 12);
 
@@ -31,11 +57,17 @@ const signup = async (req, res) => {
       password: hashPass,
     });
 
-    const token = genToken(newUser._id);
+    const { accessToken, refreshToken } = generateTokenPair(newUser._id);
+
+    newUser.refreshTokenHash = hashToken(refreshToken);
+    await newUser.save();
+
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, refreshCookieOptions());
+    setCsrfCookie(res);
 
     res.status(201).json({
       message: "Successfully created account",
-      token,
+      token: accessToken,
       newUser: {
         id: newUser._id,
         name: newUser.name,
@@ -43,9 +75,7 @@ const signup = async (req, res) => {
       },
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Server Error, try again later", error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -60,38 +90,192 @@ const login = async (req, res) => {
         .json({ message: "Invalid Credential, try signup" });
     }
 
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / 60000);
+      return res.status(423).json({
+        message: `Account locked. Try again in ${minutesLeft} minutes`,
+      });
+    }
+
     // matching user password from db
     const matchPass = await bcrypt.compare(password, user.password);
     if (!matchPass) {
-      return res.status(401).json({ message: "Invalid Password" });
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+
+      if (user.failedLoginAttempts >= MAX_ATTEMPTS) {
+        user.lockUntil = new Date(Date.now() + LOCK_DURATION);
+        user.failedLoginAttempts = 0;
+        await user.save();
+        return res.status(423).json({
+          message:
+            "Account locked due to too many failed attempts. Try again in 30 minutes",
+        });
+      }
+
+      await user.save();
+
+      const attemptsRemaining = MAX_ATTEMPTS - user.failedLoginAttempts;
+      return res.status(401).json({
+        message: "Invalid credentials",
+        attemptsRemaining: Math.max(0, attemptsRemaining),
+      });
     }
 
-    const token = genToken(user._id);
+    user.failedLoginAttempts = 0;
+    user.lockUntil = null;
+    if (user.isDeactivated) {
+      user.isDeactivated = false;
+      user.deactivatedAt = null;
+    }
+
+    const { refreshToken, accessToken } = generateTokenPair(user._id);
+    user.refreshTokenHash = hashToken(refreshToken);
+    await user.save();
+
+    res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, refreshCookieOptions());
+    setCsrfCookie(res);
 
     res.status(200).json({
       message: "Successfully login",
-      token,
+      token: accessToken,
       user: {
         id: user._id,
         email: user.email,
-        password: user.password,
+        name: user.name,
       },
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Server error, try again later", error: error.message });
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const refreshTokenEP = async (req, res) => {
+  try {
+    const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token not found" });
+    }
+
+    const decoded = verifyRefreshToken(refreshToken);
+    if (!decoded) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    const incomingHash = hashToken(refreshToken);
+    if (user.refreshTokenHash !== incomingHash) {
+      user.refreshTokenHash = null;
+      await user.save();
+      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+      return res.status(401).json({ message: "Refresh token reuse detected" });
+    }
+
+    const { accessToken, refreshToken: newRefreshToken } = generateTokenPair(
+      user._id,
+    );
+    user.refreshTokenHash = hashToken(newRefreshToken);
+    await user.save();
+
+    res.cookie(
+      REFRESH_TOKEN_COOKIE_NAME,
+      newRefreshToken,
+      refreshCookieOptions(),
+    );
+
+    setCsrfCookie(res);
+
+    res.status(200).json({
+      message: "Token refreshed",
+      token: accessToken,
+    });
+  } catch (error) {
+    // clear refresh token
+    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+    return res.status(401).json({ message: "Invalid refresh token" });
   }
 };
 
 const logout = async (req, res) => {
   try {
-    // todo - i'll implementing real logout session
-    // middleware already verified
-    res.status(200).json({ message: "Logged out successfully" });
+    if (req.token) {
+      blacklistToken(req.token);
+    }
+
+    if (req.user) {
+      req.user.refreshTokenHash = null;
+      await req.user.save();
+    }
+
+    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+
+    res.clearCookie("pm_csrf_token", {
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+
+    res.json({ message: "Logged out successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.json({ message: error.message });
   }
 };
 
-export { login, signup, logout };
+const user = async (req, res) => {
+  res.json({ user: req.user });
+};
+
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user._id;
+
+    if (!currentPassword || !newPassword) {
+      return res
+        .status(400)
+        .json({ message: "Current and new password are required" });
+    }
+
+    const user = await User.findById(userId);
+
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    );
+
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    if (newPassword.length < 8) {
+      return res
+        .status(400)
+        .json({ message: "New password must be at least 8 characters" });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    user.refreshTokenHash = null;
+    await user.save();
+
+    if (req.token) {
+      blacklistToken(req.token); // blacklist current access token too
+    }
+
+    res.json({ message: "Password changed successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export { login, signup, logout, refreshTokenEP, user, changePassword };
