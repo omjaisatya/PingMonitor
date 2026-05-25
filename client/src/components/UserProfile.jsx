@@ -243,7 +243,7 @@ const ChangeEmail = ({ user, onUpdate, logout }) => {
       await apiClient.patch("/auth/profile/email", { email, password });
       toast.success("Email updated — signing you out");
       onUpdate({ email });
-      setTimeout(() => logout(), 1500);
+      await logout();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to update email");
     } finally {
@@ -311,7 +311,7 @@ const ChangePassword = ({ logout }) => {
         newPassword: next,
       });
       toast.success("Password changed — signing you out");
-      setTimeout(() => logout(), 1500);
+      await logout();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to change password");
     } finally {

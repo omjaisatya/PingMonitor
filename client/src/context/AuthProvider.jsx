@@ -79,7 +79,13 @@ export const AuthProvider = ({ children }) => {
 
   const terminateSession = useCallback(async () => {
     try {
-      await apiClient.post("/auth/logout");
+      await apiClient.post(
+        "/auth/logout",
+        {},
+        {
+          skipAuthRefresh: true,
+        },
+      );
     } catch (err) {
       console.error("AuthProvider: logout API error ->", err);
     } finally {

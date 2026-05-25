@@ -78,6 +78,19 @@ export const deactivateAccount = async (req, res) => {
 
     if (req.token) blacklistToken(req.token);
 
+    res.clearCookie("pm_refresh_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+
+    res.clearCookie("pm_csrf_token", {
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+
     res.json({ message: "Account deactivated" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -92,6 +105,19 @@ export const deleteAccount = async (req, res) => {
 
     // TODO: cascade-delete monitors and any related data here
     // await Monitor.deleteMany({ userId: req.user._id });
+
+    res.clearCookie("pm_refresh_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
+
+    res.clearCookie("pm_csrf_token", {
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+    });
 
     res.json({ message: "Account permanently deleted" });
   } catch (error) {

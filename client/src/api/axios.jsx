@@ -78,7 +78,21 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (status === 403 && errorMessage.toLowerCase().includes("csrf")) {
+      localStorage.removeItem("pm-token");
+      localStorage.removeItem("pm-user");
+      clearCsrfToken();
+
+      window.location.href = "/login";
+
+      return Promise.reject(error);
+    }
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.skipAuthRefresh
+    ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -110,6 +124,7 @@ apiClient.interceptors.response.use(
 
         apiClient.defaults.headers.Authorization = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        originalRequest.headers["x-csrf-token"] = getCsrfToken();
 
         processQueue(null, newAccessToken);
 
