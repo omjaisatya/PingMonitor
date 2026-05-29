@@ -102,6 +102,40 @@
   color: var(--text-primary);
 }
 
+.auth-link-small {
+  align-self: flex-end;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field .form-input {
+  padding-right: 76px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px;
+}
+
+.password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 /* Big decorative background text */
 .auth-bg-text {
   position: fixed;

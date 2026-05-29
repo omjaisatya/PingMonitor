@@ -41,7 +41,7 @@ const pingmonitor = async (monitor) => {
   if (status === "down" && previousStatus !== "down") {
     try {
       const user = await User.findById(monitor.userId);
-      if (user) {
+      if (user && user.isVerified !== false) {
         await sendAlert({
           monitorName: monitor.name,
           url: monitor.url,
@@ -53,6 +53,8 @@ const pingmonitor = async (monitor) => {
         console.log(
           `alert mail send to ${user.email} for monitor: ${monitor.name}`,
         );
+      } else if (user) {
+        console.log(`alert skipped for unverified user: ${user.email}`);
       }
     } catch (emailError) {
       console.error(

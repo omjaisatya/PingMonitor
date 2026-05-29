@@ -3,6 +3,46 @@ import { SENDER_EMAIL, RESEND_API_KEY } from "../config/env.config.js";
 
 const resend = new Resend(RESEND_API_KEY);
 
+//  EMAIL SENDERS
+
+export const sendPasswordResetEmail = async ({ email, name, resetUrl }) => {
+  return resend.emails.send({
+    from: `Ping Monitor <${SENDER_EMAIL}>`,
+    to: email,
+    subject: "Reset your password",
+    html: getActionTemplate({
+      type: "warning",
+      title: "Reset your password",
+      message: `Hi ${
+        name || "there"
+      }, we received a request to reset your password. This link expires in 15 minutes.`,
+      actionLabel: "Reset Password",
+      actionUrl: resetUrl,
+    }),
+  });
+};
+
+export const sendVerificationEmail = async ({
+  email,
+  name,
+  verificationUrl,
+}) => {
+  return resend.emails.send({
+    from: `Ping Monitor <${SENDER_EMAIL}>`,
+    to: email,
+    subject: "Verify your account",
+    html: getActionTemplate({
+      type: "success",
+      title: "Verify your email",
+      message: `Hi ${
+        name || "there"
+      }, confirm your email address to activate monitoring and alerts.`,
+      actionLabel: "Verify Email",
+      actionUrl: verificationUrl,
+    }),
+  });
+};
+
 const sendAlert = async ({
   monitorName,
   url,
@@ -15,7 +55,7 @@ const sendAlert = async ({
     const data = await resend.emails.send({
       from: `Ping Monitor <${SENDER_EMAIL}>`,
       to: email,
-      subject: `${monitorName} is Down - Ping Monitor`,
+      subject: `🚨 ${monitorName} is Down`,
       html: getAlertTemplate({
         monitorName,
         url,
@@ -25,13 +65,75 @@ const sendAlert = async ({
       }),
     });
 
-    console.log("Email sent successfully:", data.id);
+    console.log("Email sent:", data.id);
+
     return data;
   } catch (error) {
     console.error("Failed to send email:", error);
     throw error;
   }
 };
+
+//  BASE LAYOUT
+
+const getBaseLayout = ({ content }) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<body style="
+  margin:0;
+  padding:0;
+  background:#0b1020;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  color:#e5e7eb;
+">
+
+  <div style="
+    width:100%;
+    padding:40px 16px;
+    box-sizing:border-box;
+  ">
+
+    <div style="
+      max-width:600px;
+      margin:0 auto;
+      background:#111827;
+      border:1px solid #1f2937;
+      border-radius:20px;
+      overflow:hidden;
+      box-shadow:0 10px 40px rgba(0,0,0,0.4);
+    ">
+
+      ${content}
+
+      <div style="
+        padding:24px 32px;
+        border-top:1px solid #1f2937;
+        color:#94a3b8;
+        font-size:12px;
+        line-height:1.7;
+      ">
+        <div style="margin-bottom:8px;">
+          © 2026 Ping Monitor
+        </div>
+
+        <div>
+          You're receiving this email because you have an active Ping Monitor account.
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</body>
+</html>
+`;
+
+//  ALERT TEMPLATE
 
 const getAlertTemplate = ({
   monitorName,
@@ -40,61 +142,218 @@ const getAlertTemplate = ({
   responseTime,
   formateDate,
 }) => {
-  return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; padding: 40px 20px; max-width: 600px; margin: 0 auto; background: #0f0f0f; color: #e0e0e0;">
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%); padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">Monitor Alert</h1>
+  return getBaseLayout({
+    content: `
+      <div style="
+        padding:40px 32px;
+        background:linear-gradient(135deg,#dc2626,#991b1b);
+      ">
+        <div style="
+          font-size:14px;
+          font-weight:700;
+          letter-spacing:1px;
+          text-transform:uppercase;
+          color:#fecaca;
+          margin-bottom:12px;
+        ">
+          Incident Detected
+        </div>
+
+        <h1 style="
+          margin:0;
+          font-size:32px;
+          line-height:1.2;
+          color:white;
+        ">
+          ${monitorName} is down
+        </h1>
       </div>
 
-      <!-- Content -->
-      <div style="background: #1a1a1a; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #444444; border-top: none;">
-        <p style="color: #e0e0e0; font-size: 16px; margin: 0 0 24px 0; line-height: 1.6;">
-          Your monitored service <strong>${monitorName}</strong> has gone <span style="color: #ff6b6b; font-weight: bold;">DOWN</span>.
+      <div style="padding:32px;">
+
+        <p style="
+          margin:0 0 28px;
+          color:#cbd5e1;
+          font-size:16px;
+          line-height:1.7;
+        ">
+          Your monitored endpoint is currently unreachable or returning an unhealthy response.
         </p>
 
-        <!-- Alert Details Table -->
-        <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
-          <tr>
-            <td style="padding: 12px 16px; background: #2d2d2d; border: 1px solid #444444; font-weight: 600; color: #b0b0b0; width: 150px;">Monitor</td>
-            <td style="padding: 12px 16px; background: #2d2d2d; border: 1px solid #444444; color: #e0e0e0;">${monitorName}</td>
-          </tr>
-          <tr>
-            <td style="padding: 12px 16px; background: #1a1a1a; border: 1px solid #444444; font-weight: 600; color: #b0b0b0;">URL</td>
-            <td style="padding: 12px 16px; background: #1a1a1a; border: 1px solid #444444; color: #6eb3ff; word-break: break-all;"><a href="${url}" style="color: #6eb3ff; text-decoration: none;">${url}</a></td>
-          </tr>
-          <tr>
-            <td style="padding: 12px 16px; background: #2d2d2d; border: 1px solid #444444; font-weight: 600; color: #b0b0b0;">Status Code</td>
-            <td style="padding: 12px 16px; background: #2d2d2d; border: 1px solid #444444; color: #e0e0e0;">
-              <span style="background: #3d1f1f; padding: 4px 8px; border-radius: 4px; font-weight: 600; color: #ff6b6b;">
-                ${statusCode || "No response"}
-              </span>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 12px 16px; background: #1a1a1a; border: 1px solid #444444; font-weight: 600; color: #b0b0b0;">Response Time</td>
-            <td style="padding: 12px 16px; background: #1a1a1a; border: 1px solid #444444; color: #e0e0e0;">${
-              responseTime ? responseTime + "ms" : "N/A"
-            }</td>
-          </tr>
-          <tr>
-            <td style="padding: 12px 16px; background: #2d2d2d; border: 1px solid #444444; font-weight: 600; color: #b0b0b0;">Alert Time</td>
-            <td style="padding: 12px 16px; background: #2d2d2d; border: 1px solid #444444; color: #e0e0e0;">${formateDate}</td>
-          </tr>
-        </table>
+        <div style="
+          background:#0f172a;
+          border:1px solid #1e293b;
+          border-radius:14px;
+          overflow:hidden;
+        ">
 
-        <!-- Footer -->
-        <div style="border-top: 1px solid #444444; padding-top: 16px; margin-top: 24px;">
-          <p style="color: #909090; font-size: 13px; margin: 0; line-height: 1.6;">
-            You'll be notified again if the service status changes. If you no longer want to monitor this service please delete or pause monitor.
-          </p>
-          <p style="color: #707070; font-size: 12px; margin: 8px 0 0 0;">
-            © 2026 Ping Monitor. All rights reserved.
-          </p>
+          ${detailRow("Monitor", monitorName)}
+          ${detailRow(
+            "URL",
+            `<a href="${url}" style="color:#60a5fa;text-decoration:none;">${url}</a>`,
+          )}
+          ${detailRow(
+            "Status",
+            `
+              <span style="
+                display:inline-block;
+                background:#7f1d1d;
+                color:#fecaca;
+                padding:6px 10px;
+                border-radius:999px;
+                font-size:13px;
+                font-weight:700;
+              ">
+                ${statusCode || "No Response"}
+              </span>
+            `,
+          )}
+          ${detailRow(
+            "Response Time",
+            responseTime ? `${responseTime}ms` : "N/A",
+          )}
+          ${detailRow("Detected At", formateDate, true)}
+
         </div>
+
+        <div style="
+          margin-top:32px;
+          padding:20px;
+          background:#111827;
+          border:1px solid #1f2937;
+          border-radius:12px;
+          color:#94a3b8;
+          font-size:14px;
+          line-height:1.7;
+        ">
+          We’ll continue monitoring this service.
+        </div>
+
       </div>
-    </div>
-  `;
+    `,
+  });
 };
+
+//  ACTION TEMPLATE
+
+const getActionTemplate = ({
+  title,
+  message,
+  actionLabel,
+  actionUrl,
+  type = "success",
+}) => {
+  const buttonColor = type === "warning" ? "#f59e0b" : "#22c55e";
+
+  return getBaseLayout({
+    content: `
+      <div style="
+        padding:48px 32px 24px;
+        text-align:center;
+      ">
+
+        <div style="
+          width:64px;
+          height:64px;
+          margin:0 auto 24px;
+          border-radius:16px;
+          background:${buttonColor}20;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-size:30px;
+        ">
+          ${type === "warning" ? "🔐" : "✉️"}
+        </div>
+
+        <h1 style="
+          margin:0 0 18px;
+          font-size:30px;
+          color:white;
+        ">
+          ${title}
+        </h1>
+
+        <p style="
+          margin:0 auto;
+          max-width:460px;
+          color:#cbd5e1;
+          font-size:16px;
+          line-height:1.8;
+        ">
+          ${message}
+        </p>
+
+        <div style="margin:36px 0;">
+          <a
+            href="${actionUrl}"
+            style="
+              display:inline-block;
+              padding:14px 28px;
+              background:${buttonColor};
+              color:#0f172a;
+              text-decoration:none;
+              font-weight:700;
+              border-radius:12px;
+              font-size:15px;
+            "
+          >
+            ${actionLabel}
+          </a>
+        </div>
+
+        <div style="
+          margin-top:28px;
+          padding:18px;
+          background:#0f172a;
+          border:1px solid #1e293b;
+          border-radius:12px;
+          text-align:left;
+          color:#94a3b8;
+          font-size:13px;
+          line-height:1.7;
+          word-break:break-word;
+        ">
+          If the button doesn't work, copy and paste this link into your browser:
+          <br /><br />
+          <span style="color:#60a5fa;">
+            ${actionUrl}
+          </span>
+        </div>
+
+      </div>
+    `,
+  });
+};
+
+//  HELPER
+
+const detailRow = (label, value, isLast = false) => `
+  <div style="
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+    padding:18px 20px;
+    border-bottom:${isLast ? "none" : "1px solid #1e293b"};
+  ">
+    <div style="
+      color:#94a3b8;
+      font-size:14px;
+      min-width:120px;
+    ">
+      ${label}
+    </div>
+
+    <div style="
+      color:#f8fafc;
+      font-size:14px;
+      text-align:right;
+      word-break:break-word;
+      flex:1;
+    ">
+      ${value}
+    </div>
+  </div>
+`;
 
 export default sendAlert;

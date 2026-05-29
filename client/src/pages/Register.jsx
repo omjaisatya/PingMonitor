@@ -7,6 +7,15 @@ import AppName from "../AppName";
 import logo from "../assets/logo.png";
 import { toast } from "react-toastify";
 
+const getApiMessage = (err, fallback) => {
+  const validationErrors = err.response?.data?.error;
+  if (Array.isArray(validationErrors) && validationErrors.length) {
+    return validationErrors.map((item) => item.message).join(", ");
+  }
+
+  return err.response?.data?.message || fallback;
+};
+
 export default function Register() {
   const { login: establishSession } = useAuth();
   const navigate = useNavigate();
@@ -18,6 +27,8 @@ export default function Register() {
     confirmPassword: "",
   });
   const [isRegistering, setIsRegistering] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleInputUpdate = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -33,6 +44,11 @@ export default function Register() {
 
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters");
+      return false;
+    }
+
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      toast.error("Password must contain uppercase, lowercase, and numbers");
       return false;
     }
 
@@ -68,17 +84,11 @@ export default function Register() {
 
       if (data.newUser && data.token) {
         toast.success(data.message || "Account created");
-        establishSession(data.newUser, data.token);
+        establishSession(data.newUser, data.token, data.csrfToken);
         navigate("/dashboard");
       }
     } catch (err) {
-      console.log(err.response);
-
-      const msg =
-        err.response?.data?.message ||
-        err.response?.data?.error[0]?.message ||
-        "Failed to register. please try again";
-      toast.error(msg);
+      toast.error(getApiMessage(err, "Failed to register. please try again"));
     } finally {
       setIsRegistering(false);
     }
@@ -126,28 +136,46 @@ export default function Register() {
 
           <div className="form-group">
             <label className="form-label">Password</label>
-            <input
-              className="form-input"
-              type="password"
-              name="password"
-              placeholder="min. 6 characters"
-              value={formData.password}
-              onChange={handleInputUpdate}
-              autoComplete="new-password"
-            />
+            <div className="password-field">
+              <input
+                className="form-input"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="min. 6 characters"
+                value={formData.password}
+                onChange={handleInputUpdate}
+                autoComplete="new-password"
+              />
+              <button
+                className="password-toggle"
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
           <div className="form-group">
             <label className="form-label">Confirm Password</label>
-            <input
-              className="form-input"
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirm password"
-              value={formData.confirmPassword}
-              onChange={handleInputUpdate}
-              autoComplete="new-password"
-            />
+            <div className="password-field">
+              <input
+                className="form-input"
+                type={showConfirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Confirm password"
+                value={formData.confirmPassword}
+                onChange={handleInputUpdate}
+                autoComplete="new-password"
+              />
+              <button
+                className="password-toggle"
+                type="button"
+                onClick={() => setShowConfirmPassword((value) => !value)}
+              >
+                {showConfirmPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
           <button

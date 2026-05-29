@@ -39,4 +39,30 @@ const loginValidator = [
   body("password").notEmpty().withMessage("password is required"),
 ];
 
-export { signUpValidator, loginValidator };
+const forgotPasswordValidator = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Provide valid email")
+    .normalizeEmail(),
+];
+
+const resetPasswordValidator = [
+  body("token").notEmpty().withMessage("Reset token is required"),
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .isLength({ min: 6 })
+    .withMessage("Password must be 6 characters long")
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage("Password must contain uppercase, lowercase, and numbers"),
+];
+
+export {
+  signUpValidator,
+  loginValidator,
+  forgotPasswordValidator,
+  resetPasswordValidator,
+};

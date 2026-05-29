@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import { AuthContext } from "./AuthContext";
 import apiClient from "../api/axios";
-import { clearCsrfToken } from "../utils/csrf";
+import {
+  clearAuthStorage,
+  clearCsrfToken,
+  getAccessToken,
+  getCsrfToken,
+  setAccessToken,
+  setCsrfToken,
+  setStoredUser,
+} from "../utils/csrf";
 import { useCallback } from "react";
 
 export const AuthProvider = ({ children }) => {
@@ -10,8 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const clearSession = useCallback(() => {
-    localStorage.removeItem("pm-token");
-    localStorage.removeItem("pm-user");
+    clearAuthStorage();
     clearCsrfToken();
     setCurrentUser(null);
     setIsAuthenticated(false);
@@ -38,12 +45,21 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const cachedToken = localStorage.getItem("pm-token");
-        const cachedUser = localStorage.getItem("pm-user");
+        const cachedToken = getAccessToken();
 
-        if (!cachedToken || !cachedUser) {
-          setIsSessionResolving(false);
-          return;
+        if (!cachedToken) {
+          if (!getCsrfToken()) {
+            setIsSessionResolving(false);
+            return;
+          }
+
+          const { data } = await apiClient.post(
+            "/auth/refresh",
+            {},
+            { skipAuthRefresh: true },
+          );
+          setAccessToken(data.token);
+          setCsrfToken(data.csrfToken);
         }
 
         const response = await apiClient.get("/auth/me");
@@ -65,10 +81,11 @@ export const AuthProvider = ({ children }) => {
     restoreSession();
   }, [clearSession]);
 
-  const establishSession = useCallback((userProfile, accessToken) => {
+  const establishSession = useCallback((userProfile, accessToken, csrfToken) => {
     try {
-      localStorage.setItem("pm-token", accessToken);
-      localStorage.setItem("pm-user", JSON.stringify(userProfile));
+      setAccessToken(accessToken);
+      setStoredUser(userProfile);
+      setCsrfToken(csrfToken);
       setCurrentUser(userProfile);
       setIsAuthenticated(true);
     } catch (error) {
@@ -97,7 +114,7 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...patch };
-      localStorage.setItem("pm-user", JSON.stringify(updated));
+      setStoredUser(updated);
       return updated;
     });
   }, []);

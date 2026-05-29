@@ -8,29 +8,81 @@ import {
 } from "../../utils/tokenCofig.js";
 import crypto from "crypto";
 import { blacklistToken } from "../../utils/tokenBlacklist.js";
+import { FRONTEND_URL } from "../config/env.config.js";
+import {
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+} from "../services/emailService.js";
 
 const REFRESH_TOKEN_COOKIE_NAME = "pm_refresh_token";
 
 const MAX_ATTEMPTS = 5;
 const LOCK_DURATION = 30 * 60 * 1000;
+const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+const RESET_TOKEN_TTL = 15 * 60 * 1000;
+const VERIFY_TOKEN_TTL = 24 * 60 * 60 * 1000;
+const isProduction = process.env.NODE_ENV === "production";
 
-const refreshCookieOptions = () => ({
+const sameSiteCookieOption = () => (isProduction ? "none" : "strict");
+
+const refreshCookieOptions = (maxAge = REFRESH_COOKIE_MAX_AGE) => ({
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict",
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  secure: isProduction,
+  sameSite: sameSiteCookieOption(),
+  maxAge,
   path: "/",
+  priority: "high",
 });
 
 const generateCsrfToken = () => crypto.randomBytes(32).toString("hex");
+const generatePublicToken = () => crypto.randomBytes(32).toString("hex");
 
 const setCsrfCookie = (res) => {
   const csrfToken = generateCsrfToken();
   res.cookie("pm_csrf_token", csrfToken, {
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    secure: isProduction,
+    sameSite: sameSiteCookieOption(),
+    maxAge: REFRESH_COOKIE_MAX_AGE,
     path: "/",
+    priority: "high",
+  });
+  return csrfToken;
+};
+
+const clearRefreshCookie = (res) => {
+  res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: sameSiteCookieOption(),
+    path: "/",
+    priority: "high",
+  });
+};
+
+const clearCsrfCookie = (res) => {
+  res.clearCookie("pm_csrf_token", {
+    secure: isProduction,
+    sameSite: sameSiteCookieOption(),
+    path: "/",
+    priority: "high",
+  });
+};
+
+const buildClientUrl = (path) => {
+  const baseUrl = FRONTEND_URL || "http://localhost:5173";
+  return `${baseUrl.replace(/\/$/, "")}${path}`;
+};
+
+const sendAccountVerification = async (user) => {
+  const verificationToken = generatePublicToken();
+  user.emailVerificationTokenHash = hashToken(verificationToken);
+  user.emailVerificationExpires = new Date(Date.now() + VERIFY_TOKEN_TTL);
+  await user.save();
+
+  await sendVerificationEmail({
+    email: user.email,
+    name: user.name,
+    verificationUrl: buildClientUrl(`/login?verifyToken=${verificationToken}`),
   });
 };
 
@@ -55,23 +107,31 @@ const signup = async (req, res) => {
       name,
       email,
       password: hashPass,
+      isVerified: false,
     });
 
     const { accessToken, refreshToken } = generateTokenPair(newUser._id);
 
     newUser.refreshTokenHash = hashToken(refreshToken);
-    await newUser.save();
+    try {
+      await sendAccountVerification(newUser);
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError.message);
+      await newUser.save();
+    }
 
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, refreshCookieOptions());
-    setCsrfCookie(res);
+    const csrfToken = setCsrfCookie(res);
 
     res.status(201).json({
       message: "Successfully created account",
       token: accessToken,
+      csrfToken,
       newUser: {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
+        isVerified: newUser.isVerified,
       },
     });
   } catch (error) {
@@ -133,15 +193,17 @@ const login = async (req, res) => {
     await user.save();
 
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, refreshCookieOptions());
-    setCsrfCookie(res);
+    const csrfToken = setCsrfCookie(res);
 
     res.status(200).json({
       message: "Successfully login",
       token: accessToken,
+      csrfToken,
       user: {
         id: user._id,
         email: user.email,
         name: user.name,
+        isVerified: user.isVerified,
       },
     });
   } catch (error) {
@@ -172,7 +234,7 @@ const refreshTokenEP = async (req, res) => {
     if (user.refreshTokenHash !== incomingHash) {
       user.refreshTokenHash = null;
       await user.save();
-      res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+      clearRefreshCookie(res);
       return res.status(401).json({ message: "Refresh token reuse detected" });
     }
 
@@ -188,15 +250,16 @@ const refreshTokenEP = async (req, res) => {
       refreshCookieOptions(),
     );
 
-    setCsrfCookie(res);
+    const csrfToken = setCsrfCookie(res);
 
     res.status(200).json({
       message: "Token refreshed",
       token: accessToken,
+      csrfToken,
     });
   } catch (error) {
     // clear refresh token
-    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+    clearRefreshCookie(res);
     return res.status(401).json({ message: "Invalid refresh token" });
   }
 };
@@ -212,18 +275,8 @@ const logout = async (req, res) => {
       await req.user.save();
     }
 
-    res.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
-
-    res.clearCookie("pm_csrf_token", {
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
+    clearRefreshCookie(res);
+    clearCsrfCookie(res);
 
     res.json({ message: "Logged out successfully" });
   } catch (error) {
@@ -233,6 +286,107 @@ const logout = async (req, res) => {
 
 const user = async (req, res) => {
   res.json({ user: req.user });
+};
+
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (user) {
+      const resetToken = generatePublicToken();
+      user.passwordResetTokenHash = hashToken(resetToken);
+      user.passwordResetExpires = new Date(Date.now() + RESET_TOKEN_TTL);
+      await user.save();
+
+      await sendPasswordResetEmail({
+        email: user.email,
+        name: user.name,
+        resetUrl: buildClientUrl(`/login?resetToken=${resetToken}`),
+      });
+    }
+
+    res.json({
+      message: "If that email exists, a password reset link has been sent",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    const user = await User.findOne({
+      passwordResetTokenHash: hashToken(token),
+      passwordResetExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Reset link is invalid or expired" });
+    }
+
+    user.password = await bcrypt.hash(password, 12);
+    user.passwordResetTokenHash = null;
+    user.passwordResetExpires = null;
+    user.refreshTokenHash = null;
+    await user.save();
+
+    clearRefreshCookie(res);
+    clearCsrfCookie(res);
+
+    res.json({ message: "Password reset successfully. Please sign in." });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: "Verification token is required" });
+    }
+
+    const user = await User.findOne({
+      emailVerificationTokenHash: hashToken(token),
+      emailVerificationExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Verification link is invalid or expired" });
+    }
+
+    user.isVerified = true;
+    user.emailVerificationTokenHash = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+
+    res.json({ message: "Email verified successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const resendVerification = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.json({ message: "Your account is already verified" });
+    }
+
+    await sendAccountVerification(user);
+    res.json({ message: "Verification email sent" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 const changePassword = async (req, res) => {
@@ -272,10 +426,24 @@ const changePassword = async (req, res) => {
       blacklistToken(req.token); // blacklist current access token too
     }
 
+    clearRefreshCookie(res);
+    clearCsrfCookie(res);
+
     res.json({ message: "Password changed successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-export { login, signup, logout, refreshTokenEP, user, changePassword };
+export {
+  login,
+  signup,
+  logout,
+  refreshTokenEP,
+  user,
+  changePassword,
+  forgotPassword,
+  resetPassword,
+  verifyEmail,
+  resendVerification,
+};

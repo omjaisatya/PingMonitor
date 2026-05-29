@@ -27,7 +27,7 @@
 - Tasks:
   - [x] Research email service alternatives (SendGrid, Mailgun, AWS SES, Resend) - (24/04/2026)
   - [x] Set up chosen email service with API keys - (24/04/2026)
-  - [ ] Implement email templates (verification, password reset, alerts)
+  - [x] Implement email templates (verification, password reset, alerts) - (29/05/2026)
   - [x] Replace emailjs with new service - (24/04/2026)
   - [ ] Test email delivery in production
   - [ ] Add email retry logic for failed sends
@@ -97,9 +97,9 @@
   - Account deletion requires confirmation
   - Password reset uses time-limited tokes
 - Tasks:
-  - [ ] Implement User Account Verifications when user isn't verified.
+  - [x] Implement User Account Verifications when user isn't verified. - (29/05/2026)
   - [x] Implement Add an option to delete account if user wants. - (16/05/2026)
-  - [ ] Implement Recovery Password
+  - [x] Implement Recovery Password - (29/05/2026)
   - [x] Implement Update User Profile - (16/05/2026)
   - [x] Implement Change Password - (16/05/2026)
 

@@ -1,5 +1,12 @@
 import axios from "axios";
-import { getCsrfToken, clearCsrfToken } from "../utils/csrf";
+import {
+  clearAuthStorage,
+  clearCsrfToken,
+  getAccessToken,
+  getCsrfToken,
+  setAccessToken,
+  setCsrfToken,
+} from "../utils/csrf";
 
 const API = import.meta.env.VITE_SERVER_URL;
 
@@ -8,13 +15,6 @@ const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
   withCredentials: true,
 });
-
-// const getCsrfToken = () => {
-//   return document.cookie
-//     .split("; ")
-//     .find((row) => row.startsWith("pm_csrf_token="))
-//     ?.split("=")[1];
-// };
 
 let isRefreshing = false;
 let failedQueue = [];
@@ -32,7 +32,7 @@ const processQueue = (error, token = null) => {
 };
 
 apiClient.interceptors.request.use((reqConfig) => {
-  const activeJwt = localStorage.getItem("pm-token");
+  const activeJwt = getAccessToken();
   if (activeJwt) {
     reqConfig.headers.Authorization = `Bearer ${activeJwt}`;
   }
@@ -57,8 +57,7 @@ apiClient.interceptors.response.use(
       status === 401 &&
       errorMessage.toLowerCase().includes("reuse detected")
     ) {
-      localStorage.removeItem("pm-token");
-      localStorage.removeItem("pm-user");
+      clearAuthStorage();
       clearCsrfToken();
       processQueue(error, null);
 
@@ -79,8 +78,7 @@ apiClient.interceptors.response.use(
     }
 
     if (status === 403 && errorMessage.toLowerCase().includes("csrf")) {
-      localStorage.removeItem("pm-token");
-      localStorage.removeItem("pm-user");
+      clearAuthStorage();
       clearCsrfToken();
 
       window.location.href = "/login";
@@ -120,7 +118,8 @@ apiClient.interceptors.response.use(
         );
 
         const { token: newAccessToken } = data;
-        localStorage.setItem("pm-token", newAccessToken);
+        setAccessToken(newAccessToken);
+        setCsrfToken(data.csrfToken);
 
         apiClient.defaults.headers.Authorization = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -130,8 +129,7 @@ apiClient.interceptors.response.use(
 
         return apiClient(originalRequest);
       } catch (refreshError) {
-        localStorage.removeItem("pm-token");
-        localStorage.removeItem("pm-user");
+        clearAuthStorage();
         clearCsrfToken();
         processQueue(refreshError, null);
 

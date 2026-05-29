@@ -1,6 +1,51 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { blacklistToken } from "../../utils/tokenBlacklist.js";
+import crypto from "crypto";
+import { hashToken } from "../../utils/tokenCofig.js";
+import { FRONTEND_URL } from "../config/env.config.js";
+import { sendVerificationEmail } from "../services/emailService.js";
+
+const isProduction = process.env.NODE_ENV === "production";
+const VERIFY_TOKEN_TTL = 24 * 60 * 60 * 1000;
+const sameSiteCookieOption = () => (isProduction ? "none" : "strict");
+
+const clearRefreshCookie = (res) => {
+  res.clearCookie("pm_refresh_token", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: sameSiteCookieOption(),
+    path: "/",
+    priority: "high",
+  });
+};
+
+const clearCsrfCookie = (res) => {
+  res.clearCookie("pm_csrf_token", {
+    secure: isProduction,
+    sameSite: sameSiteCookieOption(),
+    path: "/",
+    priority: "high",
+  });
+};
+
+const buildClientUrl = (path) => {
+  const baseUrl = FRONTEND_URL;
+  return `${baseUrl.replace(/\/$/, "")}${path}`;
+};
+
+const sendAccountVerification = async (user) => {
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+  user.emailVerificationTokenHash = hashToken(verificationToken);
+  user.emailVerificationExpires = new Date(Date.now() + VERIFY_TOKEN_TTL);
+  await user.save();
+
+  await sendVerificationEmail({
+    email: user.email,
+    name: user.name,
+    verificationUrl: buildClientUrl(`/login?verifyToken=${verificationToken}`),
+  });
+};
 
 export const updateName = async (req, res) => {
   try {
@@ -55,11 +100,19 @@ export const updateEmail = async (req, res) => {
     }
 
     user.email = email.toLowerCase();
+    user.isVerified = false;
     // invalidate all sessions since email changed
     user.refreshTokenHash = null;
-    await user.save();
+    try {
+      await sendAccountVerification(user);
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError.message);
+      await user.save();
+    }
 
     if (req.token) blacklistToken(req.token);
+    clearRefreshCookie(res);
+    clearCsrfCookie(res);
 
     res.json({ message: "Email updated successfully" });
   } catch (error) {
@@ -78,18 +131,8 @@ export const deactivateAccount = async (req, res) => {
 
     if (req.token) blacklistToken(req.token);
 
-    res.clearCookie("pm_refresh_token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
-
-    res.clearCookie("pm_csrf_token", {
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
+    clearRefreshCookie(res);
+    clearCsrfCookie(res);
 
     res.json({ message: "Account deactivated" });
   } catch (error) {
@@ -106,18 +149,8 @@ export const deleteAccount = async (req, res) => {
     // TODO: cascade-delete monitors and any related data here
     // await Monitor.deleteMany({ userId: req.user._id });
 
-    res.clearCookie("pm_refresh_token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
-
-    res.clearCookie("pm_csrf_token", {
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-    });
+    clearRefreshCookie(res);
+    clearCsrfCookie(res);
 
     res.json({ message: "Account permanently deleted" });
   } catch (error) {

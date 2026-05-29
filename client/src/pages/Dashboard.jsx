@@ -5,6 +5,7 @@ import MonitorFormModal from "../components/MonitorFormModal";
 import DeleteConfirmModal from "../components/DeleteConfModal";
 import api from "../api/axios";
 import { toast } from "react-toastify";
+import { useAuth } from "../hook/useAuth";
 
 // todo - implement websocket for prevent auto refresh page, first implement websocket in server then add here
 
@@ -15,6 +16,9 @@ export default function Dashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editMonitor, setEditMonitor] = useState(null);
   const [deleteMonitor, setDeleteMonitor] = useState(null);
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const { user } = useAuth();
+  const isVerified = user?.isVerified !== false;
 
   const fetchMonitors = useCallback(async () => {
     setLoading(true);
@@ -39,6 +43,11 @@ export default function Dashboard() {
   }, [fetchMonitors]);
 
   const handleAdd = async (formData) => {
+    if (!isVerified) {
+      toast.warning("Verify your email before adding monitors");
+      return;
+    }
+
     setFormLoading(true);
     try {
       const timezoneUser = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -62,6 +71,22 @@ export default function Dashboard() {
       );
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const resendVerification = async () => {
+    setVerificationLoading(true);
+    try {
+      const { data } = await api.post("/auth/resend-verification");
+      toast.success(data.message || "Verification email sent");
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to send verification email",
+      );
+    } finally {
+      setVerificationLoading(false);
     }
   };
 
@@ -127,11 +152,30 @@ export default function Dashboard() {
           </div>
           <button
             className="btn btn-primary"
-            onClick={() => setShowAddModal(true)}
+            onClick={() =>
+              isVerified
+                ? setShowAddModal(true)
+                : toast.warning("Verify your email before adding monitors")
+            }
           >
             + Add Monitor
           </button>
         </div>
+
+        {!isVerified && (
+          <div className="alert alert-warning" style={{ marginBottom: "24px" }}>
+            Verify your email to add monitors, change monitor settings, and
+            receive alert emails.{" "}
+            <button
+              className="btn btn-outline"
+              onClick={resendVerification}
+              disabled={verificationLoading}
+              style={{ marginLeft: "12px" }}
+            >
+              {verificationLoading ? "Sending..." : "Resend verification"}
+            </button>
+          </div>
+        )}
 
         {!loading && monitors.length > 0 && (
           <div className="stats-grid" style={{ marginBottom: "32px" }}>
@@ -166,7 +210,11 @@ export default function Dashboard() {
             <p>Add your first URL to start tracking uptime</p>
             <button
               className="btn btn-primary"
-              onClick={() => setShowAddModal(true)}
+              onClick={() =>
+                isVerified
+                  ? setShowAddModal(true)
+                  : toast.warning("Verify your email before adding monitors")
+              }
             >
               + Add Your First Monitor
             </button>
@@ -186,10 +234,6 @@ export default function Dashboard() {
           </div>
         )}
       </main>
-
-      {/* {toast && (
-        <div className={`toast alert alert-${toast.type}`}>{toast.message}</div>
-      )} */}
 
       {showAddModal && (
         <MonitorFormModal
