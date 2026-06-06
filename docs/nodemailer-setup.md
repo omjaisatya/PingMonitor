@@ -63,7 +63,7 @@ const sendAlert = async ({
   statusCode,
   responseTime,
   email,
-  formateDate
+  formateDate,
 }) => {
   const mailOptions = {
     from: `"Ping Monitor" <${EMAIL_USE}`,

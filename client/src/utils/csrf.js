@@ -25,7 +25,9 @@ export const getStoredUser = () => localStorage.getItem(USER_KEY);
 
 export const setStoredUser = (userProfile) => {
   if (!userProfile) return;
-  localStorage.setItem(USER_KEY, JSON.stringify(userProfile));
+  const cacheableProfile = { ...userProfile };
+  delete cacheableProfile.themePreference;
+  localStorage.setItem(USER_KEY, JSON.stringify(cacheableProfile));
 };
 
 export const clearAuthStorage = () => {

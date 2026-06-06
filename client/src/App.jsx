@@ -3,10 +3,13 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import MonitorDetail from "./pages/MonitorDetail";
+import Analytics from "./pages/Analytics";
+import Incidents from "./pages/Incidents";
+import PublicStatusPage from "./pages/PublicStatusPage";
 import { useAuth } from "./hook/useAuth";
 import { AuthProvider } from "./context/AuthProvider";
 import AppName from "./AppName";
-import { ToastContainer } from "react-toastify";
+import { ToastProvider } from "./context/ToastContext";
 import UserProfile from "./components/UserProfile";
 import { useSessionSecurity } from "./hook/useSessionSecurity";
 
@@ -125,6 +128,22 @@ const ApplicationRouter = () => (
       }
     />
     <Route
+      path="/analytics"
+      element={
+        <RequireAuth>
+          <Analytics />
+        </RequireAuth>
+      }
+    />
+    <Route
+      path="/incidents"
+      element={
+        <RequireAuth>
+          <Incidents />
+        </RequireAuth>
+      }
+    />
+    <Route
       path="/monitors/:id"
       element={
         <RequireAuth>
@@ -142,6 +161,8 @@ const ApplicationRouter = () => (
       }
     />
 
+    <Route path="/status/:slugOrUserId" element={<PublicStatusPage />} />
+
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
   </Routes>
 );
@@ -149,23 +170,12 @@ const ApplicationRouter = () => (
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <SecurityLayer />
-        <ApplicationRouter />
-        <ToastContainer
-          theme="dark"
-          stacked
-          position="top-right"
-          autoClose={4000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          draggable
-          pauseOnFocusLoss
-          pauseOnHover
-        />
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <SecurityLayer />
+          <ApplicationRouter />
+        </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   );
 }

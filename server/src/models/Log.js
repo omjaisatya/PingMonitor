@@ -22,6 +22,20 @@ const logSchema = new Schema({
     type: Number,
     default: null,
   },
+  region: {
+    type: String,
+    default: "central",
+  },
+  checkGroupId: {
+    type: String,
+    default: null,
+  },
+  quorum: {
+    passed: { type: Boolean, default: null },
+    totalRegions: { type: Number, default: 1 },
+    failedRegions: { type: Number, default: 0 },
+    majorityNeeded: { type: Number, default: 1 },
+  },
   timestamp: {
     type: Date,
     default: Date.now,
@@ -33,5 +47,10 @@ const logSchema = new Schema({
     expires: 604800, // 7 days
   },
 });
+
+logSchema.index({ monitorId: 1, timestamp: -1 });
+logSchema.index({ monitorId: 1, status: 1 });
+logSchema.index({ monitorId: 1, region: 1, timestamp: -1 });
+logSchema.index({ checkGroupId: 1, region: 1 });
 
 export default mongoose.model("Log", logSchema);

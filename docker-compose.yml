@@ -1,0 +1,57 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: pingmonitor-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - pingmonitor-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: pingmonitor-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - pingmonitor-net
+
+  server:
+    build:
+      context: ./server
+    container_name: pingmonitor-server
+    ports:
+      - "3006:3006"
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      - PORT=3006
+      - MONGO_URL=mongodb://mongodb:27017/pingMonitor
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=development
+    env_file:
+      - ./server/.env
+    networks:
+      - pingmonitor-net
+
+  client:
+    build:
+      context: ./client
+      args:
+        - VITE_SERVER_URL=http://localhost:3006/api
+    container_name: pingmonitor-client
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+    networks:
+      - pingmonitor-net
+
+volumes:
+  mongodb_data:
+
+networks:
+  pingmonitor-net:
+    driver: bridge

@@ -4,6 +4,10 @@ import cookieParser from "cookie-parser";
 import routerAuth from "./routes/authRoutes.js";
 import routerMon from "./routes/monitorRoutes.js";
 import routerProfile from "./routes/profileRoutes.js";
+import routerAnalytics from "./routes/analyticsRoutes.js";
+import routerNotification from "./routes/notificationRoutes.js";
+import routerPublic from "./routes/publicRoutes.js";
+import routerIncidents from "./routes/incidentRoutes.js";
 import cors from "cors";
 import { FRONTEND_URL } from "./config/env.config.js";
 import health from "./routes/healthRoute.js";
@@ -28,7 +32,11 @@ let corsOptions = {
 };
 
 // helment security middleware
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
@@ -57,9 +65,13 @@ app.get("/", (req, res) => {
 });
 
 // protected
+app.use("/api/public", routerPublic);
 app.use("/api/auth", limiter, routerAuth);
-app.use("/api/auth/profile", limiter, routerProfile);
-app.use("/api/monitors", limiter, routerMon);
+app.use("/api/auth/profile", routerProfile);
+app.use("/api/monitors", routerMon);
+app.use("/api/analytics", routerAnalytics);
+app.use("/api/notifications", routerNotification);
+app.use("/api/incidents", routerIncidents);
 
 // move error and global error handling in middleware
 app.use((req, res, next) => {

@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 import User from "../models/User.js";
 import { blacklistToken } from "../../utils/tokenBlacklist.js";
 import crypto from "crypto";
@@ -63,6 +64,30 @@ export const updateName = async (req, res) => {
     ).select("-password");
 
     res.json({ message: "Name updated", name: user.name });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateThemePreference = async (req, res) => {
+  try {
+    const { themePreference } = req.body;
+    const allowedThemes = ["dark", "light"];
+
+    if (!allowedThemes.includes(themePreference)) {
+      return res.status(400).json({ message: "Theme must be dark or light" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { themePreference },
+      { new: true },
+    ).select("-password");
+
+    res.json({
+      message: "Theme preference updated",
+      themePreference: user.themePreference,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -153,6 +178,74 @@ export const deleteAccount = async (req, res) => {
     clearCsrfCookie(res);
 
     res.json({ message: "Account permanently deleted" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateStatusPageSettings = async (req, res) => {
+  try {
+    const { statusPageEnabled, statusPageTitle, statusPageDescription, statusPageSlug } = req.body;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (statusPageEnabled !== undefined) {
+      user.statusPageEnabled = !!statusPageEnabled;
+    }
+    if (statusPageTitle !== undefined) {
+      user.statusPageTitle = statusPageTitle.trim() || "System Status";
+    }
+    if (statusPageDescription !== undefined) {
+      user.statusPageDescription = statusPageDescription.trim();
+    }
+
+    if (statusPageSlug !== undefined) {
+      const cleanSlug = statusPageSlug.trim().toLowerCase();
+      if (cleanSlug === "") {
+        user.statusPageSlug = null;
+      } else {
+        const slugRegex = /^[a-z0-9-_]+$/;
+        if (!slugRegex.test(cleanSlug)) {
+          return res.status(400).json({
+            message: "Slug can only contain alphanumeric characters, hyphens, and underscores",
+          });
+        }
+
+        if (mongoose.Types.ObjectId.isValid(cleanSlug)) {
+          return res.status(400).json({
+            message: "Slug cannot be a valid database ID format",
+          });
+        }
+
+        const existing = await User.findOne({
+          statusPageSlug: cleanSlug,
+          _id: { $ne: user._id },
+        });
+        if (existing) {
+          return res.status(400).json({ message: "This slug is already taken" });
+        }
+        user.statusPageSlug = cleanSlug;
+      }
+    }
+
+    await user.save();
+    res.json({
+      message: "Status page settings updated successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerified: user.isVerified,
+        statusPageEnabled: user.statusPageEnabled,
+        statusPageTitle: user.statusPageTitle,
+        statusPageDescription: user.statusPageDescription,
+        statusPageSlug: user.statusPageSlug,
+        themePreference: user.themePreference || "dark",
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

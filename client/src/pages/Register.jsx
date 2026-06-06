@@ -5,7 +5,7 @@ import api from "../api/axios";
 import "../styles/LoginRegis.css";
 import AppName from "../AppName";
 import logo from "../assets/logo.png";
-import { toast } from "react-toastify";
+import { toast } from "../context/ToastContext";
 
 const getApiMessage = (err, fallback) => {
   const validationErrors = err.response?.data?.error;

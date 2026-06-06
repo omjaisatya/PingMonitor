@@ -3,11 +3,12 @@ import Navbar from "../components/Navbar";
 import MonitorCard from "../components/MonitorCard";
 import MonitorFormModal from "../components/MonitorFormModal";
 import DeleteConfirmModal from "../components/DeleteConfModal";
+import Pagination from "../components/Pagination";
 import api from "../api/axios";
-import { toast } from "react-toastify";
+import { toast } from "../context/ToastContext";
 import { useAuth } from "../hook/useAuth";
-
-// todo - implement websocket for prevent auto refresh page, first implement websocket in server then add here
+import { FiPlus, FiAlertTriangle, FiActivity } from "react-icons/fi";
+import { useWebSocket } from "../hook/useWebSocket";
 
 export default function Dashboard() {
   const [monitors, setMonitors] = useState([]);
@@ -17,15 +18,18 @@ export default function Dashboard() {
   const [editMonitor, setEditMonitor] = useState(null);
   const [deleteMonitor, setDeleteMonitor] = useState(null);
   const [verificationLoading, setVerificationLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const { user } = useAuth();
   const isVerified = user?.isVerified !== false;
 
   const fetchMonitors = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/monitors");
+      const { data } = await api.get(`/monitors?page=${page}&limit=6`);
       const list = Array.isArray(data?.allMonitors) ? data.allMonitors : [];
       setMonitors(list);
+      setTotalPages(data?.pagination?.totalPages || 1);
     } catch (err) {
       const msg =
         err.response?.data?.message || err.message || "Failed to load monitors";
@@ -33,14 +37,22 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page]);
 
-  // refresh auto data 1 minute
   useEffect(() => {
     fetchMonitors();
-    const interval = setInterval(fetchMonitors, 60000);
-    return () => clearInterval(interval);
   }, [fetchMonitors]);
+
+  useWebSocket((event) => {
+    if (
+      event === "monitor:created" ||
+      event === "monitor:updated" ||
+      event === "monitor:deleted" ||
+      event === "check:completed"
+    ) {
+      fetchMonitors();
+    }
+  });
 
   const handleAdd = async (formData) => {
     if (!isVerified) {
@@ -53,7 +65,7 @@ export default function Dashboard() {
       const timezoneUser = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const { data } = await api.post("/monitors", {
         ...formData,
-        timezone: timezoneUser,
+        timezone: formData.timezone || timezoneUser,
       });
 
       if (data?.monitor?._id) {
@@ -147,7 +159,7 @@ export default function Dashboard() {
             <h1 className="page-title">Dashboard</h1>
             <p className="page-subtitle">
               {monitors.length} monitor{monitors.length !== 1 ? "s" : ""} active
-              · auto-refreshes every 60s
+              · Live WebSocket active
             </p>
           </div>
           <button
@@ -157,23 +169,35 @@ export default function Dashboard() {
                 ? setShowAddModal(true)
                 : toast.warning("Verify your email before adding monitors")
             }
+            style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
           >
-            + Add Monitor
+            <FiPlus size={16} /> Add Monitor
           </button>
         </div>
 
         {!isVerified && (
-          <div className="alert alert-warning" style={{ marginBottom: "24px" }}>
-            Verify your email to add monitors, change monitor settings, and
-            receive alert emails.{" "}
-            <button
-              className="btn btn-outline"
-              onClick={resendVerification}
-              disabled={verificationLoading}
-              style={{ marginLeft: "12px" }}
-            >
-              {verificationLoading ? "Sending..." : "Resend verification"}
-            </button>
+          <div
+            className="alert alert-warning"
+            style={{
+              marginBottom: "24px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            <FiAlertTriangle size={18} style={{ flexShrink: 0 }} />
+            <div>
+              Verify your email to add monitors, change monitor settings, and
+              receive alert emails.{" "}
+              <button
+                className="btn btn-outline"
+                onClick={resendVerification}
+                disabled={verificationLoading}
+                style={{ marginLeft: "12px" }}
+              >
+                {verificationLoading ? "Sending..." : "Resend verification"}
+              </button>
+            </div>
           </div>
         )}
 
@@ -199,13 +223,37 @@ export default function Dashboard() {
         )}
 
         {loading ? (
-          <div className="loading-screen">
-            <span className="spinner spinner-lg" />
-            <p>Loading monitors...</p>
+          <div className="monitors-grid">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton-card">
+                <div
+                  className="skeleton skeleton-title"
+                  style={{ width: "50%" }}
+                />
+                <div
+                  className="skeleton skeleton-text"
+                  style={{ width: "80%" }}
+                />
+                <div
+                  className="skeleton skeleton-text"
+                  style={{ width: "40%", marginTop: "auto" }}
+                />
+              </div>
+            ))}
           </div>
         ) : monitors.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📡</div>
+            <div
+              className="empty-state-icon"
+              style={{
+                fontSize: "32px",
+                color: "var(--text-muted)",
+                display: "flex",
+                justifyContent: "center",
+              }}
+            >
+              <FiActivity size={36} />
+            </div>
             <h3>No monitors yet</h3>
             <p>Add your first URL to start tracking uptime</p>
             <button
@@ -215,23 +263,37 @@ export default function Dashboard() {
                   ? setShowAddModal(true)
                   : toast.warning("Verify your email before adding monitors")
               }
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                margin: "16px auto 0",
+              }}
             >
-              + Add Your First Monitor
+              <FiPlus size={16} /> Add Your First Monitor
             </button>
           </div>
         ) : (
-          <div className="monitors-grid">
-            {monitors.map((monitor) =>
-              monitor?._id ? (
-                <MonitorCard
-                  key={monitor._id}
-                  monitor={monitor}
-                  onEdit={setEditMonitor}
-                  onDelete={setDeleteMonitor}
-                />
-              ) : null,
-            )}
-          </div>
+          <>
+            <div className="monitors-grid">
+              {monitors.map((monitor) =>
+                monitor?._id ? (
+                  <MonitorCard
+                    key={monitor._id}
+                    monitor={monitor}
+                    onEdit={setEditMonitor}
+                    onDelete={setDeleteMonitor}
+                  />
+                ) : null,
+              )}
+            </div>
+
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </main>
 

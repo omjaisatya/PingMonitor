@@ -35,6 +35,19 @@ const userSchema = new Schema(
     isVerified: { type: Boolean, default: false },
     isDeactivated: { type: Boolean, default: false },
     deactivatedAt: { type: Date, default: null },
+
+    // status page settings
+    statusPageEnabled: { type: Boolean, default: true },
+    statusPageTitle: { type: String, default: "System Status" },
+    statusPageDescription: { type: String, default: "Live status of our services." },
+    statusPageSlug: { type: String, unique: true, sparse: true, default: null },
+
+    // user preferences
+    themePreference: {
+      type: String,
+      enum: ["dark", "light"],
+      default: "dark",
+    },
   },
   { timestamps: true },
 );

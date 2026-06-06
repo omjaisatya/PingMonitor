@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import "../styles/MonitorCard.css";
 import { useState } from "react";
 import apiClient from "../api/axios";
-import { toast } from "react-toastify";
+import { toast } from "../context/ToastContext";
 
 export default function MonitorCard({ monitor, onEdit, onDelete }) {
   const [isActive, setIsActive] = useState(monitor.isActive);

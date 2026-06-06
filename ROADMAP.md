@@ -7,19 +7,19 @@
 - Description: Show instant data and logs without reload
 - User Value: Immediate feedback for critical monitoring events
 - Tasks:
-  - [ ] Set up WebSocket connection
-  - [ ] Handle reconnection logic
-  - [ ] Test under poor network conditions
+  - [x] Set up WebSocket connection
+  - [x] Handle reconnection logic
+  - [x] Test under poor network conditions
 
 ### Custom Toast Notifications
 
 - Description: Replace react-toastify with custom toast component for better control and consistency
 - Tasks:
-  - [ ] Design custom toast component (success, error, warning, info types)
-  - [ ] Implement toast context/provider for global state management
-  - [ ] Replace all react-toastify instances with custom toast
-  - [ ] Add animations and styling
-  - [ ] Remove react-toastify dependency
+  - [x] Design custom toast component (success, error, warning, info types)
+  - [x] Implement toast context/provider for global state management
+  - [x] Replace all react-toastify instances with custom toast
+  - [x] Add animations and styling
+  - [x] Remove react-toastify dependency
 
 ### Email Service Migration
 
@@ -49,39 +49,39 @@
 - Description: Provide detailed analytics and insights about monitor performance, uptime/downtime stats, and alert history
 - Estimated effort: High
 - Tasks:
-  - [ ] Create analytics database schema (monitor_stats, alert_logs, email_logs)
-  - [ ] Implement backend API endpoints to fetch analytics data
-  - [ ] Build analytics dashboard UI with charts and statistics
-  - [ ] Display monitor uptime percentage (daily, weekly, monthly, yearly)
-  - [ ] Display monitor downtime duration and frequency
-  - [ ] Show response time trends using line charts
-  - [ ] Display status code distribution (200, 404, 500, etc.)
-  - [ ] Create alert history log (timestamp, monitor, status, message)
-  - [ ] Add email delivery tracking (sent, failed, bounced)
-  - [ ] Implement date range filters for analytics (last 7 days, 30 days, custom)
-  - [ ] Add export functionality (PDF, CSV reports)
-  - [ ] Create real-time alerts count widget
-  - [ ] Display failed email attempts with reasons and retry status
-  - [ ] Add performance metrics (average response time, peak hours)
-  - [ ] Implement data aggregation for efficient querying
+  - [x] Create analytics database schema (monitor_stats, alert_logs, email_logs)
+  - [x] Implement backend API endpoints to fetch analytics data
+  - [x] Build analytics dashboard UI with charts and statistics
+  - [x] Display monitor uptime percentage (daily, weekly, monthly, yearly)
+  - [x] Display monitor downtime duration and frequency
+  - [x] Show response time trends using line charts
+  - [x] Display status code distribution (200, 404, 500, etc.)
+  - [x] Create alert history log (timestamp, monitor, status, message)
+  - [x] Add email delivery tracking (sent, failed, bounced)
+  - [x] Implement date range filters for analytics (last 7 days, 30 days, custom)
+  - [x] Add export functionality (PDF, CSV reports)
+  - [x] Create real-time alerts count widget
+  - [x] Display failed email attempts with reasons and retry status
+  - [x] Add performance metrics (average response time, peak hours)
+  - [x] Implement data aggregation for efficient querying
 
 ### Alert System & Notifications
 
 - Description: Implement comprehensive alert system with multiple notification channels and delivery tracking
 - Estimated effort: High
 - Tasks:
-  - [ ] Create alert configuration (email, SMS, webhook, in-app)
-  - [ ] Implement email alert notifications
+  - [x] Create alert configuration (email, SMS, webhook, in-app)
+  - [x] Implement email alert notifications
   - [ ] Add SMS alert support (Twilio or similar)
-  - [ ] Implement webhook notifications for custom integrations
-  - [ ] Create in-app notification system
-  - [ ] Add alert escalation rules (retry logic, multiple recipients)
-  - [ ] Implement do-not-disturb scheduling (quiet hours)
-  - [ ] Create alert templates for different scenarios (down, recovered, slow)
-  - [ ] Add alert delivery status tracking (pending, sent, failed, bounced)
-  - [ ] Implement alert deduplication (prevent duplicate alerts in short timeframe)
-  - [ ] Create alert history and audit logs
-  - [ ] Add user preferences for alert frequency and channels
+  - [x] Implement webhook notifications for custom integrations
+  - [x] Create in-app notification system
+  - [x] Add alert escalation rules (retry logic, multiple recipients)
+  - [x] Implement do-not-disturb scheduling (quiet hours)
+  - [x] Create alert templates for different scenarios (down, recovered, slow)
+  - [x] Add alert delivery status tracking (pending, sent, failed, bounced)
+  - [x] Implement alert deduplication (prevent duplicate alerts in short timeframe)
+  - [x] Create alert history and audit logs
+  - [x] Add user preferences for alert frequency and channels
 
 ## High Priority
 
@@ -177,10 +177,10 @@
 - Description: Containerize backend, frontend, and database
 - Estimated effort: Medium
 - Tasks:
-  - [ ] Create Dockerfile for Node backend
-  - [ ] Create Dockerfile for React frontend
-  - [ ] Create docker-compose.yml
-  - [ ] Test Docker build locally
+  - [x] Create Dockerfile for Node backend
+  - [x] Create Dockerfile for React frontend
+  - [x] Create docker-compose.yml
+  - [x] Test Docker build locally
   - [ ] Document Docker setup
 
 ## Low Priority

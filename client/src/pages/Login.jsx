@@ -5,7 +5,7 @@ import { useAuth } from "../hook/useAuth";
 import "../styles/LoginRegis.css";
 import AppName from "../AppName";
 import logo from "../assets/logo.png";
-import { toast } from "react-toastify";
+import { toast } from "../context/ToastContext";
 
 const parseLockoutMinutes = (message = "") => {
   const match = message.match(/(\d+)\s*minute/i);

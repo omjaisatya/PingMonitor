@@ -17,6 +17,12 @@ export const AuthProvider = ({ children }) => {
   const [isSessionResolving, setIsSessionResolving] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  useEffect(() => {
+    const themePreference = currentUser?.themePreference || "dark";
+    document.documentElement.dataset.theme = themePreference;
+    document.documentElement.style.colorScheme = themePreference;
+  }, [currentUser?.themePreference]);
+
   const clearSession = useCallback(() => {
     clearAuthStorage();
     clearCsrfToken();
@@ -119,12 +125,21 @@ export const AuthProvider = ({ children }) => {
     });
   }, []);
 
+  const updateTheme = useCallback(async (themePreference) => {
+    const { data } = await apiClient.patch("/auth/profile/theme", {
+      themePreference,
+    });
+    updateUser({ themePreference: data.themePreference });
+    return data.themePreference;
+  }, [updateUser]);
+
   const authState = {
     user: currentUser,
     isAuthenticated,
     login: establishSession,
     logout: terminateSession,
     updateUser,
+    updateTheme,
     loading: isSessionResolving,
   };
 

@@ -68,7 +68,6 @@ apiClient.interceptors.response.use(
         }),
       );
 
-      window.location.href = "/login?reason=session_compromised";
       return Promise.reject(error);
     }
 
@@ -81,16 +80,27 @@ apiClient.interceptors.response.use(
       clearAuthStorage();
       clearCsrfToken();
 
-      window.location.href = "/login";
+      window.dispatchEvent(
+        new CustomEvent("auth:session-compromised", {
+          detail: { reason: "session_expired" },
+        }),
+      );
 
       return Promise.reject(error);
     }
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest._retry &&
-      !originalRequest.skipAuthRefresh
-    ) {
+    if (error.response?.status === 401) {
+      if (originalRequest._retry || originalRequest.skipAuthRefresh) {
+        clearAuthStorage();
+        clearCsrfToken();
+        window.dispatchEvent(
+          new CustomEvent("auth:session-compromised", {
+            detail: { reason: "session_expired" },
+          }),
+        );
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -133,7 +143,11 @@ apiClient.interceptors.response.use(
         clearCsrfToken();
         processQueue(refreshError, null);
 
-        window.location.href = "/login";
+        window.dispatchEvent(
+          new CustomEvent("auth:session-compromised", {
+            detail: { reason: "session_expired" },
+          }),
+        );
 
         return Promise.reject(refreshError);
       } finally {

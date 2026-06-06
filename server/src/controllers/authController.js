@@ -73,6 +73,19 @@ const buildClientUrl = (path) => {
   return `${baseUrl.replace(/\/$/, "")}${path}`;
 };
 
+const serializeUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  email: user.email,
+  isVerified: user.isVerified,
+  createdAt: user.createdAt,
+  statusPageEnabled: user.statusPageEnabled,
+  statusPageTitle: user.statusPageTitle,
+  statusPageDescription: user.statusPageDescription,
+  statusPageSlug: user.statusPageSlug,
+  themePreference: user.themePreference || "dark",
+});
+
 const sendAccountVerification = async (user) => {
   const verificationToken = generatePublicToken();
   user.emailVerificationTokenHash = hashToken(verificationToken);
@@ -127,12 +140,7 @@ const signup = async (req, res) => {
       message: "Successfully created account",
       token: accessToken,
       csrfToken,
-      newUser: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        isVerified: newUser.isVerified,
-      },
+      newUser: serializeUser(newUser),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -199,12 +207,7 @@ const login = async (req, res) => {
       message: "Successfully login",
       token: accessToken,
       csrfToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        isVerified: user.isVerified,
-      },
+      user: serializeUser(user),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -285,7 +288,7 @@ const logout = async (req, res) => {
 };
 
 const user = async (req, res) => {
-  res.json({ user: req.user });
+  res.json({ user: serializeUser(req.user) });
 };
 
 const forgotPassword = async (req, res) => {
