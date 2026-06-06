@@ -15,7 +15,7 @@ PingMonitor is an automated uptime monitoring tool that performs health checks o
 - **Real-Time Heartbeats**: Concurrent ping checks with configurable timeout limits.
 - **Insightful Logging**: Captures HTTP response status codes, latencies, and down-time histories.
 - **Smart Alerting**: Dispatch email alerts via Resend on state transitions (e.g., `UP` ➔ `DOWN`) without duplicates.
-- 🧹 **Auto Data Purging**: Automated TTL indices to prune logs older than 7 days, maintaining a lightweight database.
+- **Auto Data Purging**: Automated TTL indices to prune logs older than 7 days, maintaining a lightweight database.
 - **Docker Native**: Run the entire stack locally with a single command.
 
 ## Tech Stack
