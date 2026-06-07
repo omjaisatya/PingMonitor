@@ -117,7 +117,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Subtle grid background */
 body::before {
   content: "";
   position: fixed;
@@ -175,7 +174,6 @@ select {
   background: var(--accent);
 }
 
-/* layout */
 .page-wrapper {
   min-height: 100vh;
   display: flex;
@@ -197,7 +195,6 @@ select {
   width: 100%;
 }
 
-/* typography */
 .page-title {
   font-family: var(--font-display);
   font-size: clamp(24px, 4vw, 36px);
@@ -217,7 +214,6 @@ select {
   font-family: var(--font-mono);
 }
 
-/* button */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -295,7 +291,6 @@ select {
   transform: none !important;
 }
 
-/* card */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -309,7 +304,6 @@ select {
   border-color: var(--border-light);
 }
 
-/* formelement */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -353,7 +347,6 @@ select {
   margin-top: 4px;
 }
 
-/* status badge */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -416,7 +409,6 @@ select {
   }
 }
 
-/* emplty state */
 .empty-state {
   text-align: center;
   padding: 80px 24px;
@@ -443,7 +435,6 @@ select {
   margin-bottom: 24px;
 }
 
-/* loading spiiner */
 .spinner {
   width: 20px;
   height: 20px;
@@ -481,7 +472,6 @@ select {
   color: var(--text-muted);
 }
 
-/* modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -558,7 +548,6 @@ select {
   }
 }
 
-/* table   ==== in monitor details */
 .table-wrapper {
   overflow-x: auto;
   border-radius: var(--radius-lg);
@@ -607,7 +596,6 @@ tbody tr:hover {
   background: var(--bg-card-hover);
 }
 
-/* stat grid used in monitor details || dashboard */
 .back-link {
   display: inline-flex;
   align-items: center;
@@ -778,7 +766,6 @@ tbody tr:hover {
   white-space: nowrap;
 }
 
-/* dashboard */
 .dashboard-header {
   display: flex;
   align-items: center;
@@ -793,7 +780,6 @@ tbody tr:hover {
   flex-direction: column;
 }
 
-/* Monitors Grid Layout */
 .monitors-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -922,7 +908,6 @@ tbody tr:hover {
   }
 }
 
-/* resp design */
 @media (max-width: 768px) {
   .main-content {
     padding: 24px 16px;
@@ -964,7 +949,6 @@ tbody tr:hover {
     justify-content: center;
   }
 
-  /* dashboard */
   .dashboard-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1032,7 +1016,6 @@ tbody tr:hover {
   }
 }
 
-/* Skeleton Loading Screens */
 @keyframes skeleton-pulse {
   0% {
     background-color: var(--border);
@@ -1077,7 +1060,6 @@ tbody tr:hover {
   height: 180px;
 }
 
-/* Modal Tabbed Navigation */
 .modal-tabs {
   display: flex;
   gap: 4px;
@@ -1117,7 +1099,6 @@ tbody tr:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Custom Checkbox Alert Channels */
 .alert-channels-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -1173,7 +1154,6 @@ tbody tr:hover {
   line-height: 1.4;
 }
 
-/* Form Row for inline options */
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1186,7 +1166,6 @@ tbody tr:hover {
   }
 }
 
-/* Quiet Hours inputs */
 .quiet-hours-group {
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -1216,7 +1195,6 @@ tbody tr:hover {
   font-family: var(--font-mono);
 }
 
-/* Custom time input appearance */
 .time-input {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
@@ -1234,7 +1212,6 @@ tbody tr:hover {
   box-shadow: 0 0 0 2px rgba(102, 85, 255, 0.1);
 }
 
-/* Toggle Switch Custom Styling */
 .switch-label {
   display: inline-flex;
   align-items: center;
@@ -1280,7 +1257,6 @@ tbody tr:hover {
   background-color: #fff;
 }
 
-/* Custom Toast Notification System */
 .custom-toast-container {
   position: fixed;
   top: 24px;
@@ -1315,7 +1291,6 @@ tbody tr:hover {
   border-color: var(--border-accent, #3a3a5c);
 }
 
-/* Toast types theme borders */
 .custom-toast--success {
   border-left: 4px solid var(--green, #00ff88);
 }
@@ -1386,7 +1361,6 @@ tbody tr:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Progress bar */
 .custom-toast__progress-bar-container {
   position: absolute;
   bottom: 0;
@@ -1414,7 +1388,6 @@ tbody tr:hover {
   background: var(--accent, #6655ff);
 }
 
-/* Animation states */
 .toast-enter {
   animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

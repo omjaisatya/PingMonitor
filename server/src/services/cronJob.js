@@ -49,14 +49,25 @@ const isInQuietHours = (quietHours, timezone = "UTC") => {
 };
 
 // Dispatch alerts to configured channels
-const dispatchNotifications = async (monitor, eventType, statusCode, responseTime, message, downtimeSec = 0) => {
+const dispatchNotifications = async (
+  monitor,
+  eventType,
+  statusCode,
+  responseTime,
+  message,
+  downtimeSec = 0,
+) => {
   try {
     // 1. Check deduplication / cool-down for DOWN or SLOW events
     if (eventType === "down" || eventType === "slow") {
       if (monitor.lastAlertedAt && monitor.alertCooldown) {
-        const elapsedMin = (Date.now() - new Date(monitor.lastAlertedAt).getTime()) / (1000 * 60);
+        const elapsedMin =
+          (Date.now() - new Date(monitor.lastAlertedAt).getTime()) /
+          (1000 * 60);
         if (elapsedMin < monitor.alertCooldown) {
-          console.log(`Deduplication: Skiping alert dispatch for ${monitor.name}. Cooldown active (${Math.round(elapsedMin)}/${monitor.alertCooldown}m).`);
+          console.log(
+            `Deduplication: Skiping alert dispatch for ${monitor.name}. Cooldown active (${Math.round(elapsedMin)}/${monitor.alertCooldown}m).`,
+          );
           return;
         }
       }
@@ -76,7 +87,9 @@ const dispatchNotifications = async (monitor, eventType, statusCode, responseTim
       if (delivery.email === "pending") delivery.email = "muted";
       if (delivery.webhook === "pending") delivery.webhook = "muted";
       if (delivery.inApp === "pending") delivery.inApp = "muted";
-      console.log(`Muting alerts for ${monitor.name} due to active Quiet Hours DND.`);
+      console.log(
+        `Muting alerts for ${monitor.name} due to active Quiet Hours DND.`,
+      );
     }
 
     // 4. Dispatch Webhook
@@ -100,11 +113,14 @@ const dispatchNotifications = async (monitor, eventType, statusCode, responseTim
               timestamp: new Date().toISOString(),
             },
           },
-          { timeout: 3000 }
+          { timeout: 3000 },
         );
         delivery.webhook = "sent";
       } catch (err) {
-        console.error(`Webhook trigger failed for ${monitor.name}:`, err.message);
+        console.error(
+          `Webhook trigger failed for ${monitor.name}:`,
+          err.message,
+        );
         delivery.webhook = "failed";
         errorDetails.webhook = err.message;
       }
@@ -123,7 +139,10 @@ const dispatchNotifications = async (monitor, eventType, statusCode, responseTim
         });
         delivery.inApp = "sent";
       } catch (err) {
-        console.error(`In-App Log creation failed for ${monitor.name}:`, err.message);
+        console.error(
+          `In-App Log creation failed for ${monitor.name}:`,
+          err.message,
+        );
         delivery.inApp = "failed";
       }
     }
@@ -157,7 +176,10 @@ const dispatchNotifications = async (monitor, eventType, statusCode, responseTim
           delivery.email = "disabled"; // User unverified
         }
       } catch (err) {
-        console.error(`Email dispatch failed for ${monitor.name}:`, err.message);
+        console.error(
+          `Email dispatch failed for ${monitor.name}:`,
+          err.message,
+        );
         delivery.email = "failed";
         errorDetails.email = err.message;
       }
@@ -165,10 +187,14 @@ const dispatchNotifications = async (monitor, eventType, statusCode, responseTim
 
     // 7. Update cooldown timestamp for alerts
     if (
-      (delivery.email === "sent" || delivery.webhook === "sent" || delivery.inApp === "sent") &&
+      (delivery.email === "sent" ||
+        delivery.webhook === "sent" ||
+        delivery.inApp === "sent") &&
       eventType !== "recovered"
     ) {
-      await Monitor.findByIdAndUpdate(monitor._id, { lastAlertedAt: new Date() });
+      await Monitor.findByIdAndUpdate(monitor._id, {
+        lastAlertedAt: new Date(),
+      });
     }
 
     // 8. Create Alert History & Audit Log
@@ -205,7 +231,7 @@ const calculateDowntime = async (monitorId) => {
       await MonitorStats.findOneAndUpdate(
         { monitorId, date: today },
         { $inc: { downtimeDuration: downtimeSec } },
-        { upsert: true }
+        { upsert: true },
       );
       return downtimeSec;
     }
@@ -216,12 +242,18 @@ const calculateDowntime = async (monitorId) => {
 };
 
 // Helper to update daily statistics incrementally
-const updateDailyStats = async (monitorId, status, responseTime, statusCode, previousStatus) => {
+const updateDailyStats = async (
+  monitorId,
+  status,
+  responseTime,
+  statusCode,
+  previousStatus,
+) => {
   try {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
-    const isTransitionToDown = (status === "down" && previousStatus !== "down");
+    const isTransitionToDown = status === "down" && previousStatus !== "down";
 
     const updateObj = {
       $inc: {
@@ -229,10 +261,12 @@ const updateDailyStats = async (monitorId, status, responseTime, statusCode, pre
         upCount: status === "up" ? 1 : 0,
         downCount: status === "down" ? 1 : 0,
         downtimeFrequency: isTransitionToDown ? 1 : 0,
-      }
+      },
     };
 
-    const codeKey = statusCode ? `statusCodes.${statusCode}` : "statusCodes.unknown";
+    const codeKey = statusCode
+      ? `statusCodes.${statusCode}`
+      : "statusCodes.unknown";
     updateObj.$inc[codeKey] = 1;
 
     if (responseTime !== null && responseTime !== undefined) {
@@ -240,11 +274,10 @@ const updateDailyStats = async (monitorId, status, responseTime, statusCode, pre
       updateObj.$inc.responseTimeCount = 1;
     }
 
-    await MonitorStats.findOneAndUpdate(
-      { monitorId, date: today },
-      updateObj,
-      { upsert: true, new: true }
-    );
+    await MonitorStats.findOneAndUpdate({ monitorId, date: today }, updateObj, {
+      upsert: true,
+      new: true,
+    });
   } catch (err) {
     console.error("Failed to update daily stats:", err);
   }
@@ -257,10 +290,10 @@ const pingmonitor = async (monitor) => {
   let responseTime = null;
 
   try {
-    const response = await axios.get(monitor.url, { 
+    const response = await axios.get(monitor.url, {
       timeout: 1000,
       httpAgent,
-      httpsAgent
+      httpsAgent,
     });
     responseTime = Date.now() - start;
     statusCode = response.status;
@@ -286,7 +319,7 @@ const pingmonitor = async (monitor) => {
     if (previousStatus === "down") {
       // 1. Calculate Downtime
       const downtimeSec = await calculateDowntime(monitor._id);
-      
+
       // 2. Handle Recovery Notification Preferences
       const notifyOnRecovery = monitor.notifyOnRecovery ?? true;
       const recoveryDelay = monitor.recoveryAlertDelay ?? 0;
@@ -295,40 +328,88 @@ const pingmonitor = async (monitor) => {
         if (recoveryDelay === 0) {
           // Send immediately
           const message = `Monitor ${monitor.name} is back UP (HTTP ${statusCode})`;
-          await dispatchNotifications(monitor, "recovered", statusCode, responseTime, message, downtimeSec);
-          await handleMonitorRecoveryIncident({ monitor, statusCode, responseTime, downtimeSec });
-          await Monitor.findByIdAndUpdate(monitor._id, { status: "up", firstRecoveredAt: null });
+          await dispatchNotifications(
+            monitor,
+            "recovered",
+            statusCode,
+            responseTime,
+            message,
+            downtimeSec,
+          );
+          await handleMonitorRecoveryIncident({
+            monitor,
+            statusCode,
+            responseTime,
+            downtimeSec,
+          });
+          await Monitor.findByIdAndUpdate(monitor._id, {
+            status: "up",
+            firstRecoveredAt: null,
+          });
         } else {
           // Delay notification - set recovery timestamp
-          await Monitor.findByIdAndUpdate(monitor._id, { status: "up", firstRecoveredAt: new Date() });
-          console.log(`Delaying recovery alert for ${monitor.name} by ${recoveryDelay} minutes.`);
+          await Monitor.findByIdAndUpdate(monitor._id, {
+            status: "up",
+            firstRecoveredAt: new Date(),
+          });
+          console.log(
+            `Delaying recovery alert for ${monitor.name} by ${recoveryDelay} minutes.`,
+          );
         }
       } else {
         // Recovery alerts disabled
-        await Monitor.findByIdAndUpdate(monitor._id, { status: "up", firstRecoveredAt: null });
-        console.log(`Recovery alert muted for ${monitor.name} per preferences.`);
+        await Monitor.findByIdAndUpdate(monitor._id, {
+          status: "up",
+          firstRecoveredAt: null,
+        });
+        console.log(
+          `Recovery alert muted for ${monitor.name} per preferences.`,
+        );
       }
     } else {
       // previousStatus was "up"
       // Check if we have a pending delayed recovery notification
       if (monitor.firstRecoveredAt) {
-        const elapsedMs = Date.now() - new Date(monitor.firstRecoveredAt).getTime();
+        const elapsedMs =
+          Date.now() - new Date(monitor.firstRecoveredAt).getTime();
         const delayMs = (monitor.recoveryAlertDelay || 0) * 60 * 1000;
 
         if (elapsedMs >= delayMs) {
           const downtimeSec = await calculateDowntime(monitor._id);
           const message = `Monitor ${monitor.name} is back UP (HTTP ${statusCode})`;
-          await dispatchNotifications(monitor, "recovered", statusCode, responseTime, message, downtimeSec);
-          await handleMonitorRecoveryIncident({ monitor, statusCode, responseTime, downtimeSec });
-          await Monitor.findByIdAndUpdate(monitor._id, { firstRecoveredAt: null });
-          console.log(`Delayed recovery alert dispatched for ${monitor.name} after ${monitor.recoveryAlertDelay} minutes.`);
+          await dispatchNotifications(
+            monitor,
+            "recovered",
+            statusCode,
+            responseTime,
+            message,
+            downtimeSec,
+          );
+          await handleMonitorRecoveryIncident({
+            monitor,
+            statusCode,
+            responseTime,
+            downtimeSec,
+          });
+          await Monitor.findByIdAndUpdate(monitor._id, {
+            firstRecoveredAt: null,
+          });
+          console.log(
+            `Delayed recovery alert dispatched for ${monitor.name} after ${monitor.recoveryAlertDelay} minutes.`,
+          );
         }
       } else {
         // Latency threshold alert checking
         const latencyLimit = monitor.latencyThreshold || 2000;
         if (responseTime > latencyLimit) {
           const message = `Monitor ${monitor.name} is SLOW. Latency: ${responseTime}ms (threshold: ${latencyLimit}ms)`;
-          await dispatchNotifications(monitor, "slow", statusCode, responseTime, message);
+          await dispatchNotifications(
+            monitor,
+            "slow",
+            statusCode,
+            responseTime,
+            message,
+          );
         }
       }
     }
@@ -336,9 +417,9 @@ const pingmonitor = async (monitor) => {
 
   if (status === "down") {
     const updatedFailures = (monitor.consecutiveFailures || 0) + 1;
-    await Monitor.findByIdAndUpdate(monitor._id, { 
+    await Monitor.findByIdAndUpdate(monitor._id, {
       consecutiveFailures: updatedFailures,
-      firstRecoveredAt: null // reset recovery tracker on failure
+      firstRecoveredAt: null, // reset recovery tracker on failure
     });
 
     const limit = monitor.retryLimit || 1;
@@ -346,12 +427,24 @@ const pingmonitor = async (monitor) => {
     if (updatedFailures >= limit) {
       if (previousStatus !== "down") {
         // Trigger DOWN Alert
-        const message = `Monitor ${monitor.name} is DOWN. HTTP ${statusCode || 'No Response'} (failed ${updatedFailures} consecutive times)`;
-        await dispatchNotifications(monitor, "down", statusCode, responseTime, message);
+        const message = `Monitor ${monitor.name} is DOWN. HTTP ${statusCode || "No Response"} (failed ${updatedFailures} consecutive times)`;
+        await dispatchNotifications(
+          monitor,
+          "down",
+          statusCode,
+          responseTime,
+          message,
+        );
       } else {
         // Still down, cooldown limits will be checked inside notification dispatcher
-        const message = `Monitor ${monitor.name} remains DOWN. HTTP ${statusCode || 'No Response'}`;
-        await dispatchNotifications(monitor, "down", statusCode, responseTime, message);
+        const message = `Monitor ${monitor.name} remains DOWN. HTTP ${statusCode || "No Response"}`;
+        await dispatchNotifications(
+          monitor,
+          "down",
+          statusCode,
+          responseTime,
+          message,
+        );
       }
       await handleMonitorFailureIncident({
         monitor,
@@ -359,15 +452,24 @@ const pingmonitor = async (monitor) => {
         responseTime,
         failureCount: updatedFailures,
       });
-      await Monitor.findByIdAndUpdate(monitor._id, { status: "down", firstRecoveredAt: null });
+      await Monitor.findByIdAndUpdate(monitor._id, {
+        status: "down",
+        firstRecoveredAt: null,
+      });
     }
   }
 
   // Update daily stats incrementally in all cases
-  await updateDailyStats(monitor._id, status, responseTime, statusCode, previousStatus);
+  await updateDailyStats(
+    monitor._id,
+    status,
+    responseTime,
+    statusCode,
+    previousStatus,
+  );
 
   console.log(
-    `[${new Date().toLocaleTimeString()}] ${monitor.name} → ${status.toUpperCase()} (${statusCode}) ${responseTime}ms`
+    `[${new Date().toLocaleTimeString()}] ${monitor.name} → ${status.toUpperCase()} (${statusCode}) ${responseTime}ms`,
   );
 };
 
@@ -378,7 +480,7 @@ const startEmailRetryCron = () => {
       const failedEmails = await EmailLog.find({
         status: "failed",
         retryStatus: "pending",
-        retryCount: { $lt: 3 }
+        retryCount: { $lt: 3 },
       });
 
       if (failedEmails.length === 0) {
@@ -395,7 +497,9 @@ const startEmailRetryCron = () => {
 
         try {
           const user = await User.findById(emailLog.userId);
-          const monitor = emailLog.monitorId ? await Monitor.findById(emailLog.monitorId) : null;
+          const monitor = emailLog.monitorId
+            ? await Monitor.findById(emailLog.monitorId)
+            : null;
 
           if (user && monitor) {
             const currentDate = new Date();
@@ -420,14 +524,22 @@ const startEmailRetryCron = () => {
 
             emailLog.status = "sent";
             emailLog.retryStatus = "retried";
-            console.log(`Successfully retried alert email for ${monitor.name} to ${emailLog.email}`);
+            console.log(
+              `Successfully retried alert email for ${monitor.name} to ${emailLog.email}`,
+            );
           } else {
             emailLog.retryStatus = "failed";
-            console.log(`Retry failed for email log ${emailLog._id}: User or Monitor no longer exists.`);
+            console.log(
+              `Retry failed for email log ${emailLog._id}: User or Monitor no longer exists.`,
+            );
           }
         } catch (err) {
-          console.error(`Retry attempt ${emailLog.retryCount} failed for log ${emailLog._id}:`, err.message);
-          emailLog.retryStatus = emailLog.retryCount >= 3 ? "failed" : "pending";
+          console.error(
+            `Retry attempt ${emailLog.retryCount} failed for log ${emailLog._id}:`,
+            err.message,
+          );
+          emailLog.retryStatus =
+            emailLog.retryCount >= 3 ? "failed" : "pending";
           emailLog.errorReason = err.message;
         }
         await emailLog.save();
