@@ -1,11 +1,21 @@
-// components/UserProfile.jsx
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, id } from "react";
 import { toast } from "../context/ToastContext";
 import { useAuth } from "../hook/useAuth";
 import apiClient from "../api/axios";
 import "../styles/UserProfile.css";
 import Navbar from "./Navbar";
-import { FiUser, FiShield, FiSliders, FiSettings, FiActivity } from "react-icons/fi";
+import {
+  FiUser,
+  FiShield,
+  FiSliders,
+  FiSettings,
+  FiActivity,
+  FiEye,
+  FiEyeOff,
+  FiCopy,
+  FiCheck,
+  FiExternalLink,
+} from "react-icons/fi";
 
 const scorePassword = (password) => {
   if (!password) return { score: 0, label: "", color: "" };
@@ -68,20 +78,25 @@ const SectionCard = ({ title, subtitle, icon, children, danger }) => (
   </div>
 );
 
-const Field = ({ label, hint, children }) => (
+const Field = ({ label, hint, id, children }) => (
   <div className="profile-field">
-    <label className="profile-field__label">{label}</label>
+    {label && (
+      <label htmlFor={id} className="profile-field__label">
+        {label}
+      </label>
+    )}
     {children}
     {hint && <p className="profile-field__hint">{hint}</p>}
   </div>
 );
 
-const PasswordInput = ({ value, onChange, placeholder, autoComplete }) => {
+const PasswordInput = ({ id, value, onChange, placeholder, autoComplete }) => {
   const [show, setShow] = useState(false);
   return (
     <div className="input-wrap">
       <input
-        className="profile-input"
+        id={id}
+        className="profile-input profile-input--password"
         type={show ? "text" : "password"}
         value={value}
         onChange={onChange}
@@ -92,8 +107,9 @@ const PasswordInput = ({ value, onChange, placeholder, autoComplete }) => {
         type="button"
         className="input-eye"
         onClick={() => setShow((p) => !p)}
+        aria-label={show ? "Hide password" : "Show password"}
       >
-        {show ? "Hide" : "Show"}
+        {show ? <FiEyeOff size={16} /> : <FiEye size={16} />}
       </button>
     </div>
   );
@@ -118,18 +134,23 @@ const ConfirmModal = ({
         <h3 className="modal__title">{title}</h3>
         <p className="modal__message">{message}</p>
         {requireText && (
-          <div className="profile-field" style={{ marginTop: "16px" }}>
-            <label className="profile-field__label">
-              Type <strong>{requireText}</strong> to confirm
-            </label>
+          <Field
+            label={
+              <span>
+                Type <strong>{requireText}</strong> to confirm
+              </span>
+            }
+            id="modalConfirmInput"
+          >
             <input
+              id="modalConfirmInput"
               className="profile-input"
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
               placeholder={requireText}
               autoComplete="off"
             />
-          </div>
+          </Field>
         )}
         <div className="modal__actions">
           <button className="btn btn-ghost" onClick={onCancel}>
@@ -149,7 +170,11 @@ const ConfirmModal = ({
 };
 
 const ProfileInfo = ({ user }) => (
-  <SectionCard title="Account Info" subtitle="Your current account details" icon={<FiUser />}>
+  <SectionCard
+    title="Account Info"
+    subtitle="Your current account details"
+    icon={<FiUser />}
+  >
     <div className="info-grid">
       <div className="info-item">
         <span className="info-item__label">Name</span>
@@ -202,10 +227,15 @@ const ChangeName = ({ user, onUpdate }) => {
   };
 
   return (
-    <SectionCard title="Display Name" subtitle="Update how your name appears" icon={<FiSettings />}>
-      <form onSubmit={handleSubmit}>
-        <Field label="Full name">
+    <SectionCard
+      title="Display Name"
+      subtitle="Update how your name appears"
+      icon={<FiSettings />}
+    >
+      <form onSubmit={handleSubmit} className="form-layout">
+        <Field label="Full name" id="profileName">
           <input
+            id="profileName"
             className="profile-input"
             type="text"
             value={name}
@@ -258,9 +288,10 @@ const ChangeEmail = ({ user, onUpdate, logout }) => {
       subtitle="Changing your email will sign you out"
       icon={<FiShield />}
     >
-      <form onSubmit={handleSubmit}>
-        <Field label="New email address">
+      <form onSubmit={handleSubmit} className="form-layout">
+        <Field label="New email address" id="newEmail">
           <input
+            id="newEmail"
             className="profile-input"
             type="email"
             value={form.email}
@@ -269,8 +300,13 @@ const ChangeEmail = ({ user, onUpdate, logout }) => {
             autoComplete="email"
           />
         </Field>
-        <Field label="Current password" hint="Required to confirm this change">
+        <Field
+          label="Current password"
+          hint="Required to confirm this change"
+          id="emailConfirmPassword"
+        >
           <PasswordInput
+            id="emailConfirmPassword"
             value={form.password}
             onChange={(e) =>
               setForm((p) => ({ ...p, password: e.target.value }))
@@ -327,9 +363,10 @@ const ChangePassword = ({ logout }) => {
       subtitle="Use a strong, unique password"
       icon={<FiShield />}
     >
-      <form onSubmit={handleSubmit}>
-        <Field label="Current password">
+      <form onSubmit={handleSubmit} className="form-layout">
+        <Field label="Current password" id="currentPassword">
           <PasswordInput
+            id="currentPassword"
             value={form.current}
             onChange={(e) =>
               setForm((p) => ({ ...p, current: e.target.value }))
@@ -338,8 +375,9 @@ const ChangePassword = ({ logout }) => {
             autoComplete="current-password"
           />
         </Field>
-        <Field label="New password">
+        <Field label="New password" id="newPassword">
           <PasswordInput
+            id="newPassword"
             value={form.next}
             onChange={(e) => setForm((p) => ({ ...p, next: e.target.value }))}
             placeholder="Min. 8 characters"
@@ -347,8 +385,9 @@ const ChangePassword = ({ logout }) => {
           />
         </Field>
         <PasswordStrengthBar password={form.next} />
-        <Field label="Confirm new password">
+        <Field label="Confirm new password" id="confirmPassword">
           <PasswordInput
+            id="confirmPassword"
             value={form.confirm}
             onChange={(e) =>
               setForm((p) => ({ ...p, confirm: e.target.value }))
@@ -396,13 +435,18 @@ const DeactivateAccount = ({ logout }) => {
         subtitle="Temporarily disable your account"
         icon={<FiSliders />}
       >
-        <p className="danger-description">
-          Your account and data will be preserved. You can reactivate at any
-          time by signing back in.
-        </p>
-        <button className="btn btn-warning" onClick={() => setModalOpen(true)}>
-          Deactivate account
-        </button>
+        <div className="danger-zone-wrapper">
+          <p className="danger-description">
+            Your account and data will be preserved. You can reactivate at any
+            time by signing back in.
+          </p>
+          <button
+            className="btn btn-warning"
+            onClick={() => setModalOpen(true)}
+          >
+            Deactivate account
+          </button>
+        </div>
       </SectionCard>
       <ConfirmModal
         isOpen={modalOpen}
@@ -441,13 +485,15 @@ const DeleteAccount = ({ logout }) => {
         icon={<FiSliders />}
         danger
       >
-        <p className="danger-description">
-          This is irreversible. All your monitors, history, and account data
-          will be permanently erased with no way to recover them.
-        </p>
-        <button className="btn btn-danger" onClick={() => setModalOpen(true)}>
-          Delete my account
-        </button>
+        <div className="danger-zone-wrapper">
+          <p className="danger-description">
+            This is irreversible. All your monitors, history, and account data
+            will be permanently erased with no way to recover them.
+          </p>
+          <button className="btn btn-danger" onClick={() => setModalOpen(true)}>
+            Delete my account
+          </button>
+        </div>
       </SectionCard>
       <ConfirmModal
         isOpen={modalOpen}
@@ -463,10 +509,34 @@ const DeleteAccount = ({ logout }) => {
   );
 };
 
+const CopyButton = ({ text, label }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success(`${label} copied to clipboard!`);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      type="button"
+      className={`btn ${copied ? "btn-success-pills" : "btn-ghost"}`}
+      onClick={handleCopy}
+    >
+      {copied ? <FiCheck size={14} /> : <FiCopy size={14} />}
+      <span>{copied ? "Copied" : "Copy"}</span>
+    </button>
+  );
+};
+
 const StatusPageSettings = ({ user, onUpdate }) => {
   const [enabled, setEnabled] = useState(user?.statusPageEnabled ?? true);
   const [title, setTitle] = useState(user?.statusPageTitle || "System Status");
-  const [desc, setDesc] = useState(user?.statusPageDescription || "Live status of our services.");
+  const [desc, setDesc] = useState(
+    user?.statusPageDescription || "Live status of our services.",
+  );
   const [slug, setSlug] = useState(user?.statusPageSlug || "");
   const [saving, setSaving] = useState(false);
 
@@ -478,7 +548,11 @@ const StatusPageSettings = ({ user, onUpdate }) => {
       setLoadingMons(true);
       try {
         const { data } = await apiClient.get("/monitors");
-        setMonitors(data.allMonitors || data.monitors || (Array.isArray(data) ? data : []));
+        setMonitors(
+          data.allMonitors ||
+            data.monitors ||
+            (Array.isArray(data) ? data : []),
+        );
       } catch (err) {
         console.error("Error loading monitors:", err);
       } finally {
@@ -510,56 +584,43 @@ const StatusPageSettings = ({ user, onUpdate }) => {
   const currentSlugOrId = user?.statusPageSlug || user?.id || user?._id;
   const publicUrl = `${window.location.origin}/status/${currentSlugOrId}`;
   const iframeCode = `<iframe src="${publicUrl}?embed=true" width="100%" height="450" style="border:none;border-radius:12px;background:transparent;"></iframe>`;
-  
+
   const serverBase = import.meta.env.VITE_SERVER_URL;
   const userBadgeUrl = `${serverBase}/public/badge-user/${currentSlugOrId}`;
 
-  const copyToClipboard = (text, label) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard!`);
-  };
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <SectionCard title="Status Page Configuration" subtitle="Configure your public status dashboard" icon={<FiActivity />}>
-        <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 0" }}>
-            <label className="switch" style={{ position: "relative", display: "inline-block", width: "40px", height: "20px", flexShrink: 0 }}>
-              <input 
-                type="checkbox" 
-                checked={enabled} 
-                onChange={(e) => setEnabled(e.target.checked)} 
-                style={{ opacity: 0, width: 0, height: 0 }}
+    <div className="status-settings-wrapper">
+      <SectionCard
+        title="Status Page Configuration"
+        subtitle="Configure your public status dashboard"
+        icon={<FiActivity />}
+      >
+        <form onSubmit={handleSave} className="form-layout">
+          <div className="toggle-control">
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
               />
-              <span className="slider round" style={{
-                position: "absolute",
-                cursor: "pointer",
-                top: 0, left: 0, right: 0, bottom: 0,
-                backgroundColor: enabled ? "var(--green, #1d9e75)" : "#444",
-                transition: ".4s",
-                borderRadius: "20px"
-              }}>
-                <span style={{
-                  position: "absolute",
-                  content: "",
-                  height: "14px",
-                  width: "14px",
-                  left: enabled ? "22px" : "4px",
-                  bottom: "3px",
-                  backgroundColor: "white",
-                  transition: ".4s",
-                  borderRadius: "50%"
-                }} />
+              <span className={`slider round ${enabled ? "active" : ""}`}>
+                <span className={`slider-thumb ${enabled ? "active" : ""}`} />
               </span>
             </label>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>
-              {enabled ? "Public Status Page Enabled" : "Public Status Page Disabled"}
+            <span className="toggle-label">
+              {enabled
+                ? "Public Status Page Enabled"
+                : "Public Status Page Disabled"}
             </span>
           </div>
 
-          <Field label="Status Page Title" hint="Display title on the public page">
+          <Field
+            label="Status Page Title"
+            hint="Display title on the public page"
+            id="statusTitle"
+          >
             <input
+              id="statusTitle"
               className="profile-input"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -568,31 +629,38 @@ const StatusPageSettings = ({ user, onUpdate }) => {
             />
           </Field>
 
-          <Field label="Status Page Description" hint="Brief explanation of your status updates">
+          <Field
+            label="Status Page Description"
+            hint="Brief explanation of your status updates"
+            id="statusDesc"
+          >
             <textarea
-              className="profile-input"
+              id="statusDesc"
+              className="profile-input profile-input--textarea"
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               placeholder="e.g. Live status of Acme Corp APIs and websites."
               rows={3}
-              style={{ resize: "vertical", fontFamily: "inherit" }}
             />
           </Field>
 
-          <Field 
-            label="Custom Page Slug" 
+          <Field
+            label="Custom Page Slug"
             hint="Set a custom path segment. Leave empty to use your default account ID."
+            id="statusSlug"
           >
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <span style={{ fontSize: "13px", color: "var(--text-muted)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
-                /status/
-              </span>
+            <div className="slug-input-container">
+              <span className="slug-prefix">/status/</span>
               <input
-                className="profile-input"
+                id="statusSlug"
+                className="profile-input profile-input--slug"
                 value={slug}
-                onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ""))}
+                onChange={(e) =>
+                  setSlug(
+                    e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, ""),
+                  )
+                }
                 placeholder="e.g. acme-status"
-                style={{ fontFamily: "var(--font-mono)" }}
               />
             </div>
           </Field>
@@ -605,81 +673,149 @@ const StatusPageSettings = ({ user, onUpdate }) => {
 
       {enabled && (
         <>
-          <SectionCard title="Sharing & Embed Widgets" subtitle="Use these links and elements to attach status reports" icon={<FiSettings />}>
-            
-            <Field label="Public Status Link" hint="Direct link to your unauthenticated status page">
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input className="profile-input" readOnly value={publicUrl} style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }} onClick={(e) => e.target.select()} />
-                <button type="button" className="btn btn-ghost" style={{ padding: "0 14px", flexShrink: 0 }} onClick={() => copyToClipboard(publicUrl, "Link")}>
-                  Copy
-                </button>
-                <a href={publicUrl} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ padding: "10px 14px", flexShrink: 0, textDecoration: "none" }}>
-                  Visit
-                </a>
-              </div>
-            </Field>
+          <SectionCard
+            title="Sharing & Embed Widgets"
+            subtitle="Use these links and elements to attach status reports"
+            icon={<FiSettings />}
+          >
+            <div className="form-layout">
+              <Field
+                label="Public Status Link"
+                hint="Direct link to your unauthenticated status page"
+                id="publicStatusLink"
+              >
+                <div className="action-input-group">
+                  <input
+                    id="publicStatusLink"
+                    className="profile-input profile-input--readonly"
+                    readOnly
+                    value={publicUrl}
+                    onClick={(e) => e.target.select()}
+                  />
+                  <CopyButton text={publicUrl} label="Link" />
+                  <a
+                    href={publicUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-primary btn-icon-only"
+                  >
+                    <FiExternalLink size={14} />
+                    <span>Visit</span>
+                  </a>
+                </div>
+              </Field>
 
-            <Field label="Iframe Embed Snippet" hint="Paste this HTML into your website's body">
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input className="profile-input" readOnly value={iframeCode} style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }} onClick={(e) => e.target.select()} />
-                <button type="button" className="btn btn-ghost" style={{ padding: "0 14px", flexShrink: 0 }} onClick={() => copyToClipboard(iframeCode, "Iframe Code")}>
-                  Copy
-                </button>
-              </div>
-            </Field>
-
+              <Field
+                label="Iframe Embed Snippet"
+                hint="Paste this HTML into your website's body"
+                id="iframeEmbedSnippet"
+              >
+                <div className="action-input-group">
+                  <input
+                    id="iframeEmbedSnippet"
+                    className="profile-input profile-input--readonly"
+                    readOnly
+                    value={iframeCode}
+                    onClick={(e) => e.target.select()}
+                  />
+                  <CopyButton text={iframeCode} label="Iframe Code" />
+                </div>
+              </Field>
+            </div>
           </SectionCard>
 
-          <SectionCard title="Status Badge Previews" subtitle="Live SVG badges to embed in README files or sites" icon={<FiActivity />}>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "16px" }}>
-                <h4 style={{ fontSize: "13px", fontWeight: 600, marginBottom: "8px", color: "var(--text-secondary)" }}>
-                  Overall Account Status
-                </h4>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
-                  <div style={{ background: "rgba(0,0,0,0.2)", padding: "10px", borderRadius: "8px", border: "1px dashed rgba(255,255,255,0.1)", display: "inline-flex", alignItems: "center", minHeight: "42px" }}>
-                    <img src={`${userBadgeUrl}?t=${Date.now()}`} alt="Overall status badge" key={user?.statusPageSlug || user?._id} style={{ display: "block" }} />
+          <SectionCard
+            title="Status Badge Previews"
+            subtitle="Live SVG badges to embed in README files or sites"
+            icon={<FiActivity />}
+          >
+            <div className="badge-preview-container">
+              <div className="badge-preview-row">
+                <div className="badge-meta">
+                  <h4>Overall Account Status</h4>
+                </div>
+                <div className="badge-action-card">
+                  <div className="badge-visual-container">
+                    <img
+                      src={`${userBadgeUrl}?t=${Date.now()}`}
+                      alt="Overall status badge"
+                      key={user?.statusPageSlug || user?._id}
+                    />
                   </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button type="button" className="btn btn-ghost" style={{ fontSize: "12px", padding: "6px 12px" }} onClick={() => copyToClipboard(`![System Status](${userBadgeUrl})`, "Markdown Badge")}>
+                  <div className="badge-buttons">
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() =>
+                        navigator.clipboard.writeText(
+                          `![System Status](${userBadgeUrl})`,
+                        ) & toast.success("Markdown Badge copied!")
+                      }
+                    >
                       Markdown
                     </button>
-                    <button type="button" className="btn btn-ghost" style={{ fontSize: "12px", padding: "6px 12px" }} onClick={() => copyToClipboard(`<img src="${userBadgeUrl}" alt="System Status" />`, "HTML Badge")}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() =>
+                        navigator.clipboard.writeText(
+                          `<img src="${userBadgeUrl}" alt="System Status" />`,
+                        ) & toast.success("HTML Badge copied!")
+                      }
+                    >
                       HTML
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <h4 style={{ fontSize: "13px", fontWeight: 600, marginBottom: "12px", color: "var(--text-secondary)" }}>
-                  Individual Monitor Badges
-                </h4>
-                
+              <div className="individual-badges-section">
+                <h4>Individual Monitor Badges</h4>
+
                 {loadingMons ? (
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)", padding: "10px 0" }}>Loading monitors list...</div>
+                  <div className="loading-state">Loading monitors list...</div>
                 ) : monitors.length === 0 ? (
-                  <div style={{ fontSize: "12px", color: "var(--text-muted)", padding: "10px 0" }}>No monitors configured to create badges.</div>
+                  <div className="empty-state">
+                    No monitors configured to create badges.
+                  </div>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div className="monitors-badge-list">
                     {monitors.map((mon) => {
                       const monBadgeUrl = `${serverBase}/public/badge/${mon._id}`;
                       return (
-                        <div key={mon._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", borderBottom: "1px solid rgba(255,255,255,0.03)", paddingBottom: "10px" }}>
-                          <div>
-                            <div style={{ fontSize: "13px", fontWeight: 500, color: "var(--text-primary)" }}>{mon.name}</div>
-                            <div style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{mon.url}</div>
+                        <div key={mon._id} className="monitor-badge-item">
+                          <div className="monitor-details">
+                            <span className="monitor-name">{mon.name}</span>
+                            <span className="monitor-url">{mon.url}</span>
                           </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            <div style={{ background: "rgba(0,0,0,0.15)", padding: "4px 8px", borderRadius: "4px", display: "inline-flex" }}>
-                              <img src={monBadgeUrl} alt={`${mon.name} status badge`} style={{ height: "20px" }} />
+                          <div className="monitor-badge-actions">
+                            <div className="badge-visual-wrapper">
+                              <img
+                                src={monBadgeUrl}
+                                alt={`${mon.name} status badge`}
+                              />
                             </div>
-                            <div style={{ display: "flex", gap: "6px" }}>
-                              <button type="button" className="btn btn-ghost" style={{ fontSize: "11px", padding: "4px 8px" }} onClick={() => copyToClipboard(`![${mon.name} Status](${monBadgeUrl})`, "Markdown Badge")}>
+                            <div className="badge-buttons-group">
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-xs"
+                                onClick={() =>
+                                  navigator.clipboard.writeText(
+                                    `![${mon.name} Status](${monBadgeUrl})`,
+                                  ) & toast.success("Markdown copied!")
+                                }
+                              >
                                 MD
                               </button>
-                              <button type="button" className="btn btn-ghost" style={{ fontSize: "11px", padding: "4px 8px" }} onClick={() => copyToClipboard(`<img src="${monBadgeUrl}" alt="${mon.name} Status" />`, "HTML Badge")}>
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-xs"
+                                onClick={() =>
+                                  navigator.clipboard.writeText(
+                                    `<img src="${monBadgeUrl}" alt="${mon.name} Status" />`,
+                                  ) & toast.success("HTML copied!")
+                                }
+                              >
                                 HTML
                               </button>
                             </div>
@@ -691,7 +827,6 @@ const StatusPageSettings = ({ user, onUpdate }) => {
                 )}
               </div>
             </div>
-
           </SectionCard>
         </>
       )}
@@ -717,7 +852,6 @@ export default function UserProfile() {
   return (
     <>
       <Navbar />
-
       <div className="profile-page">
         <div className="profile-page__inner">
           <div className="profile-header">
@@ -732,18 +866,19 @@ export default function UserProfile() {
             </div>
           </div>
 
-          <div className="profile-tabs">
+          <div className="profile-tabs" role="tablist">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
                   className={`profile-tab ${activeTab === tab.id ? "profile-tab--active" : ""}`}
                   onClick={() => setActiveTab(tab.id)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
                 >
-                  <Icon size={14} />
-                  {tab.label}
+                  <Icon size={16} />
+                  <span>{tab.label}</span>
                 </button>
               );
             })}

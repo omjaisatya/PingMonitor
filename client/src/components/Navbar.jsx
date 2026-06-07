@@ -5,14 +5,18 @@ import api from "../api/axios";
 import "../styles/Navbar.css";
 import AppName from "../AppName";
 import logo from "../assets/logo.png";
-import { FiBell, FiChevronDown, FiMoon, FiSun } from "react-icons/fi";
+import {
+  FiBell,
+  FiChevronDown,
+  FiMoon,
+  FiSun,
+  FiExternalLink,
+  FiLogOut,
+  FiUser,
+} from "react-icons/fi";
 
 export default function Navbar() {
-  const {
-    user: activeUser,
-    logout: terminateSession,
-    updateTheme,
-  } = useAuth();
+  const { user: activeUser, logout: terminateSession, updateTheme } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,7 +25,6 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isThemeSaving, setIsThemeSaving] = useState(false);
 
-  // Notifications states
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -29,18 +32,28 @@ export default function Navbar() {
   const userMenuRef = useRef(null);
   const notifMenuRef = useRef(null);
 
-  // close user dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+    const handleDismissiveActions = (e) => {
+      if (e.type === "mousedown") {
+        if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+          setIsUserMenuOpen(false);
+        }
+        if (notifMenuRef.current && !notifMenuRef.current.contains(e.target)) {
+          setIsNotifOpen(false);
+        }
+      } else if (e.type === "keydown" && e.key === "Escape") {
         setIsUserMenuOpen(false);
-      }
-      if (notifMenuRef.current && !notifMenuRef.current.contains(e.target)) {
         setIsNotifOpen(false);
+        setIsMobileNavExpanded(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    document.addEventListener("mousedown", handleDismissiveActions);
+    document.addEventListener("keydown", handleDismissiveActions);
+    return () => {
+      document.removeEventListener("mousedown", handleDismissiveActions);
+      document.removeEventListener("keydown", handleDismissiveActions);
+    };
   }, []);
 
   const fetchNotifications = useCallback(async () => {
@@ -64,7 +77,7 @@ export default function Navbar() {
     try {
       await api.patch(`/notifications/${id}/read`);
       setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)),
       );
       setUnreadCount((c) => Math.max(0, c - 1));
     } catch (err) {
@@ -82,10 +95,10 @@ export default function Navbar() {
     }
   };
 
-  // close mobile menu on route change
   useEffect(() => {
     setIsMobileNavExpanded(false);
     setIsUserMenuOpen(false);
+    setIsNotifOpen(false);
   }, [location.pathname]);
 
   const executeLogout = async () => {
@@ -107,16 +120,13 @@ export default function Navbar() {
   const nextTheme = activeTheme === "dark" ? "light" : "dark";
   const ThemeIcon = activeTheme === "dark" ? FiSun : FiMoon;
 
-  const handleThemeToggle = async () => {
+  const handleThemeToggle = (e) => {
+    e.stopPropagation();
     if (isThemeSaving) return;
     setIsThemeSaving(true);
-    try {
-      await updateTheme(nextTheme);
-    } catch (err) {
-      console.error("Failed to update theme preference:", err);
-    } finally {
-      setIsThemeSaving(false);
-    }
+    updateTheme(nextTheme)
+      .catch((err) => console.error("Failed to update theme preference:", err))
+      .finally(() => setIsThemeSaving(false));
   };
 
   const isActive = (path) => location.pathname === path;
@@ -128,39 +138,47 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="navbar">
+    <nav className="navbar" aria-label="Main Navigation">
       <div className="navbar-inner">
         {/* Brand */}
-        <Link to="/dashboard" className="navbar-brand">
-          <img src={logo} alt="app-logo" className="brand-logo" />
+        <Link
+          to="/dashboard"
+          className="navbar-brand"
+          aria-label={`${AppName} Home`}
+        >
+          <img src={logo} alt="" className="brand-logo" />
           <span className="brand-text">{AppName}</span>
         </Link>
 
         {activeUser && (
           <>
-            {/* Desktop nav links */}
-            <div className="navbar-links desktop-only">
+            {/* Desktop Nav Links */}
+            <div className="navbar-links desktop-only" role="navigation">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
                   className={`navbar-link ${isActive(link.to) ? "navbar-link--active" : ""}`}
+                  aria-current={isActive(link.to) ? "page" : undefined}
                 >
                   {link.label}
                 </Link>
               ))}
             </div>
 
-            {/* Notification Bell Trigger */}
-            <div className="navbar-notif desktop-only" ref={notifMenuRef} style={{ marginRight: "12px", position: "relative" }}>
+            {/* Notification Control Element */}
+            <div
+              className="navbar-notif-container desktop-only"
+              ref={notifMenuRef}
+            >
               <button
                 className={`notif-trigger ${unreadCount > 0 ? "has-unread" : ""}`}
                 onClick={() => setIsNotifOpen((p) => !p)}
                 aria-expanded={isNotifOpen}
-                aria-label="Notifications"
-                style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+                aria-haspopup="true"
+                aria-label={`Notifications, ${unreadCount} unread items`}
               >
-                <span className="notif-bell-icon" style={{ display: "flex", alignItems: "center" }}>
+                <span className="notif-bell-icon">
                   <FiBell size={18} />
                 </span>
                 {unreadCount > 0 && (
@@ -169,11 +187,14 @@ export default function Navbar() {
               </button>
 
               {isNotifOpen && (
-                <div className="notif-dropdown">
+                <div className="notif-dropdown" role="menu">
                   <div className="notif-dropdown__header">
                     <span className="notif-dropdown__title">Notifications</span>
                     {unreadCount > 0 && (
-                      <button className="notif-dropdown__clear-btn" onClick={markAllNotifRead}>
+                      <button
+                        className="notif-dropdown__clear-btn"
+                        onClick={markAllNotifRead}
+                      >
                         Mark all read
                       </button>
                     )}
@@ -189,20 +210,32 @@ export default function Navbar() {
                         <div
                           key={notif._id}
                           className={`notif-dropdown__item ${notif.isRead ? "" : "notif-unread"}`}
-                          onClick={() => !notif.isRead && markNotifRead(notif._id)}
+                          onClick={() =>
+                            !notif.isRead && markNotifRead(notif._id)
+                          }
+                          role="menuitem"
+                          tabIndex={0}
                         >
                           <div className="notif-item__header">
-                            <span className={`notif-item__badge notif-badge-${notif.status}`}>
+                            <span
+                              className={`notif-item__badge notif-badge-${notif.status}`}
+                            >
                               {notif.status.toUpperCase()}
                             </span>
                             <span className="notif-item__time">
-                              {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(notif.timestamp).toLocaleTimeString(
+                                [],
+                                { hour: "2-digit", minute: "2-digit" },
+                              )}
                             </span>
                           </div>
                           <div className="notif-item__msg">{notif.message}</div>
                           {notif.monitorId && (
                             <div className="notif-item__monitor">
-                              {notif.monitorId.name} ({notif.monitorId.url})
+                              {notif.monitorId.name} —{" "}
+                              <span className="notif-item__url">
+                                {notif.monitorId.url}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -213,13 +246,14 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Desktop right — user dropdown */}
+            {/* Desktop Account Menu Dropdown */}
             <div className="navbar-right desktop-only" ref={userMenuRef}>
               <button
-                className="user-trigger"
+                className={`user-trigger ${isUserMenuOpen ? "user-trigger--active" : ""}`}
                 onClick={() => setIsUserMenuOpen((p) => !p)}
                 aria-expanded={isUserMenuOpen}
-                aria-label="User menu"
+                aria-haspopup="true"
+                aria-label="User contextual profile menu"
               >
                 <span className="user-trigger__avatar">
                   {(activeUser.name ||
@@ -230,15 +264,14 @@ export default function Navbar() {
                 <FiChevronDown
                   className={`user-trigger__chevron ${isUserMenuOpen ? "open" : ""}`}
                   size={14}
-                  style={{ marginLeft: "4px" }}
                 />
               </button>
 
               {isUserMenuOpen && (
-                <div className="user-dropdown">
+                <div className="user-dropdown" role="menu">
                   <div className="user-dropdown__info">
                     <span className="user-dropdown__name">
-                      {activeUser.name || "—"}
+                      {activeUser.name || "User Account"}
                     </span>
                     <span className="user-dropdown__email">
                       {activeUser.email}
@@ -249,37 +282,50 @@ export default function Navbar() {
                     className="user-dropdown__item"
                     onClick={handleThemeToggle}
                     disabled={isThemeSaving}
+                    role="menuitem"
                   >
                     <ThemeIcon size={14} />
-                    {isThemeSaving
-                      ? "Saving theme..."
-                      : `Switch to ${nextTheme} mode`}
+                    <span>
+                      {isThemeSaving
+                        ? "Saving preference..."
+                        : `Appearance: ${activeTheme === "dark" ? "Light" : "Dark"} Mode`}
+                    </span>
                   </button>
                   <div className="user-dropdown__divider" />
                   <Link
                     to="/profile"
                     className="user-dropdown__item"
                     onClick={() => setIsUserMenuOpen(false)}
+                    role="menuitem"
                   >
-                    Account settings
+                    <FiUser size={14} />
+                    <span>Account settings</span>
                   </Link>
                   <div className="user-dropdown__divider" />
                   <button
                     className="user-dropdown__item user-dropdown__item--danger"
                     onClick={executeLogout}
                     disabled={isProcessingLogout}
+                    role="menuitem"
                   >
-                    {isProcessingLogout ? "Signing out..." : "Sign out"}
+                    <FiLogOut size={14} />
+                    <span>
+                      {isProcessingLogout ? "Signing out..." : "Sign out"}
+                    </span>
                   </button>
                 </div>
               )}
             </div>
 
-            {/* Hamburger — mobile only */}
+            {/* Hamburger Trigger — Mobile Viewports */}
             <button
               className={`hamburger mobile-only ${isMobileNavExpanded ? "hamburger--open" : ""}`}
               onClick={() => setIsMobileNavExpanded((prev) => !prev)}
-              aria-label="Toggle mobile navigation"
+              aria-label={
+                isMobileNavExpanded
+                  ? "Collapse responsive navigation panel"
+                  : "Expand responsive navigation panel"
+              }
               aria-expanded={isMobileNavExpanded}
             >
               <span className="ham-line" />
@@ -290,14 +336,14 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* Mobile menu */}
+      {/* Expanded Mobile Navigation Drawer */}
       {isMobileNavExpanded && activeUser && (
         <div className="mobile-menu">
           <div className="mobile-menu__user">
             <span className="mobile-menu__avatar">
               {(activeUser.name || activeUser.email || "?")[0].toUpperCase()}
             </span>
-            <div>
+            <div className="mobile-menu__user-meta">
               <p className="mobile-menu__name">{activeUser.name || "—"}</p>
               <p className="mobile-menu__email">{activeUser.email}</p>
             </div>
@@ -305,43 +351,46 @@ export default function Navbar() {
 
           <div className="mobile-menu__divider" />
 
-          {/* Mobile notifications list */}
+          {/* Integrated Mobile Notification Alerts Wrapper */}
           <div className="mobile-menu__notif">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", padding: "0 12px" }}>
-              <span className="form-label" style={{ margin: 0, fontSize: "10px" }}>Recent Alerts ({unreadCount} unread)</span>
+            <div className="mobile-menu__notif-header">
+              <span className="mobile-menu__notif-lbl">
+                Recent Alerts ({unreadCount} unread)
+              </span>
               {unreadCount > 0 && (
-                <button className="notif-dropdown__clear-btn" onClick={markAllNotifRead} style={{ fontSize: "10px", background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontWeight: "bold" }}>
+                <button
+                  className="mobile-menu__clear-all-btn"
+                  onClick={markAllNotifRead}
+                >
                   Mark all read
                 </button>
               )}
             </div>
-            <div className="mobile-notif-list" style={{ maxHeight: "200px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "8px", padding: "0 12px" }}>
+
+            <div className="mobile-notif-list">
               {notifications.length === 0 ? (
-                <div style={{ fontSize: "12px", color: "var(--text-muted)", textAlign: "center", padding: "12px 0" }}>No alerts</div>
+                <div className="mobile-notif-empty">No dynamic alerts</div>
               ) : (
                 notifications.slice(0, 5).map((notif) => (
                   <div
                     key={notif._id}
                     className={`mobile-notif-item ${notif.isRead ? "" : "mobile-notif-unread"}`}
                     onClick={() => !notif.isRead && markNotifRead(notif._id)}
-                    style={{
-                      background: notif.isRead ? "var(--bg-input)" : "rgba(102, 85, 255, 0.05)",
-                      border: `1px solid ${notif.isRead ? "var(--border)" : "var(--accent-border)"}`,
-                      borderRadius: "8px",
-                      padding: "10px",
-                      cursor: "pointer",
-                      fontSize: "12px"
-                    }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                      <span style={{ fontWeight: 700, color: notif.status === "down" ? "var(--red)" : notif.status === "up" ? "var(--green)" : "var(--yellow)" }}>
+                    <div className="mobile-notif-item__meta">
+                      <span
+                        className={`mobile-notif-status mobile-notif-status--${notif.status}`}
+                      >
                         {notif.status.toUpperCase()}
                       </span>
-                      <span style={{ color: "var(--text-muted)", fontSize: "9px" }}>
-                        {new Date(notif.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      <span className="mobile-notif-time">
+                        {new Date(notif.timestamp).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
                     </div>
-                    <div style={{ color: "var(--text-primary)", fontWeight: notif.isRead ? 400 : 600 }}>{notif.message}</div>
+                    <div className="mobile-notif-message">{notif.message}</div>
                   </div>
                 ))
               )}
@@ -372,9 +421,11 @@ export default function Navbar() {
               disabled={isThemeSaving}
             >
               <ThemeIcon size={14} />
-              {isThemeSaving
-                ? "Saving theme..."
-                : `Switch to ${nextTheme} mode`}
+              <span>
+                {isThemeSaving
+                  ? "Updating preference..."
+                  : `Appearance: ${activeTheme === "dark" ? "Light" : "Dark"} Mode`}
+              </span>
             </button>
           </div>
 
@@ -386,11 +437,15 @@ export default function Navbar() {
             disabled={isProcessingLogout}
           >
             {isProcessingLogout ? (
-              <>
-                <span className="spinner spinner-sm" /> Signing out...
-              </>
+              <div className="logout-loading-state">
+                <span className="spinner spinner-sm" />
+                <span>Signing out...</span>
+              </div>
             ) : (
-              "Sign out"
+              <>
+                <FiLogOut size={14} />
+                <span>Sign out from session</span>
+              </>
             )}
           </button>
         </div>
