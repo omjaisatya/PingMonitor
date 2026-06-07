@@ -15,33 +15,60 @@ import { MarkdownBlock } from "../utils/markdown";
 
 const StatusSkeleton = () => (
   <div className="status-page-container">
-    <div className="status-header" style={{ opacity: 0.5 }}>
+    <div className="status-header" style={{ opacity: 0.4 }}>
       <div
-        className="status-header__logo skeleton-text"
-        style={{ width: "120px", height: "24px", margin: "0 auto 12px" }}
+        className="skeleton-title"
+        style={{
+          width: "120px",
+          height: "24px",
+          margin: "0 auto 12px",
+          background: "rgba(255,255,255,0.1)",
+          borderRadius: "4px",
+        }}
       ></div>
       <div
         className="skeleton-title"
-        style={{ width: "300px", height: "36px", margin: "0 auto 8px" }}
+        style={{
+          width: "280px",
+          height: "34px",
+          margin: "0 auto 8px",
+          background: "rgba(255,255,255,0.1)",
+          borderRadius: "6px",
+        }}
       ></div>
       <div
         className="skeleton-text"
-        style={{ width: "200px", height: "16px", margin: "0 auto" }}
+        style={{
+          width: "210px",
+          height: "14px",
+          margin: "0 auto",
+          background: "rgba(255,255,255,0.06)",
+          borderRadius: "4px",
+        }}
       ></div>
     </div>
     <div
-      className="system-status-banner skeleton"
+      className="system-status-banner"
       style={{
-        height: "76px",
+        height: "64px",
         width: "100%",
         maxWidth: "800px",
-        marginBottom: "30px",
+        marginBottom: "24px",
+        background: "rgba(255,255,255,0.03)",
       }}
     ></div>
-    <div className="status-card">
+    <div
+      className="status-card"
+      style={{ background: "rgba(255,255,255,0.02)" }}
+    >
       <div
-        className="skeleton-title"
-        style={{ width: "150px", height: "22px", marginBottom: "20px" }}
+        style={{
+          width: "140px",
+          height: "20px",
+          marginBottom: "24px",
+          background: "rgba(255,255,255,0.1)",
+          borderRadius: "4px",
+        }}
       ></div>
       {[1, 2, 3].map((i) => (
         <div
@@ -49,23 +76,37 @@ const StatusSkeleton = () => (
           style={{
             display: "flex",
             justifyContent: "space-between",
+            alignItems: "center",
             padding: "16px 0",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
+            borderBottom: "1px solid rgba(255,255,255,0.04)",
           }}
         >
           <div>
             <div
-              className="skeleton-title"
-              style={{ width: "120px", height: "18px", marginBottom: "6px" }}
+              style={{
+                width: "110px",
+                height: "16px",
+                marginBottom: "8px",
+                background: "rgba(255,255,255,0.08)",
+                borderRadius: "4px",
+              }}
             ></div>
             <div
-              className="skeleton-text"
-              style={{ width: "180px", height: "12px" }}
+              style={{
+                width: "160px",
+                height: "12px",
+                background: "rgba(255,255,255,0.04)",
+                borderRadius: "4px",
+              }}
             ></div>
           </div>
           <div
-            className="skeleton"
-            style={{ width: "180px", height: "30px", borderRadius: "4px" }}
+            style={{
+              width: "140px",
+              height: "24px",
+              background: "rgba(255,255,255,0.06)",
+              borderRadius: "4px",
+            }}
           ></div>
         </div>
       ))}
@@ -102,9 +143,7 @@ export default function PublicStatusPage() {
     }
   }, [slugOrUserId]);
 
-  if (loading) {
-    return <StatusSkeleton />;
-  }
+  if (loading) return <StatusSkeleton />;
 
   if (error) {
     return (
@@ -121,48 +160,35 @@ export default function PublicStatusPage() {
   const { title, description, systemStatus, monitors, incidents = [] } = data;
 
   const renderStatusBanner = () => {
-    switch (systemStatus) {
-      case "all_operational":
-        return (
-          <div className="system-status-banner all_operational">
-            <span className="status-pulse-ring" />
-            <span className="system-status-banner__text">
-              All Systems Operational
-            </span>
-          </div>
-        );
-      case "partial_outage":
-        return (
-          <div className="system-status-banner partial_outage">
-            <span className="status-pulse-ring" />
-            <span className="system-status-banner__text">
-              Partial System Outage
-            </span>
-          </div>
-        );
-      case "major_outage":
-        return (
-          <div className="system-status-banner major_outage">
-            <span className="status-pulse-ring" />
-            <span className="system-status-banner__text">
-              Major System Outage
-            </span>
-          </div>
-        );
-      default:
-        return (
-          <div className="system-status-banner unknown">
-            <span className="status-pulse-ring" />
-            <span className="system-status-banner__text">
-              System Status Unknown
-            </span>
-          </div>
-        );
-    }
+    const bannerConfig = {
+      all_operational: {
+        class: "all_operational",
+        label: "All Systems Operational",
+      },
+      partial_outage: {
+        class: "partial_outage",
+        label: "Partial System Outage",
+      },
+      major_outage: { class: "major_outage", label: "Major System Outage" },
+    };
+
+    const currentBanner = bannerConfig[systemStatus] || {
+      class: "unknown",
+      label: "System Status Unknown",
+    };
+
+    return (
+      <div className={`system-status-banner ${currentBanner.class}`}>
+        <span className="status-pulse-ring" />
+        <span className="system-status-banner__text">
+          {currentBanner.label}
+        </span>
+      </div>
+    );
   };
 
   const getBarTooltipText = (bar) => {
-    if (bar.isEmpty) return "No history recorded";
+    if (bar.isEmpty) return "";
     const dateStr =
       new Date(bar.timestamp).toLocaleTimeString([], {
         hour: "2-digit",
@@ -214,18 +240,21 @@ export default function PublicStatusPage() {
               : "uptime-bar down";
 
           return (
-            <div key={bar.key} className="uptime-bar-wrapper">
+            <div
+              key={bar.key}
+              className={`uptime-bar-wrapper ${bar.isEmpty ? "is-empty" : ""}`}
+            >
               <div className={barClass} />
-              <div className="uptime-tooltip">
-                <div className="tooltip-time">
-                  {bar.isEmpty
-                    ? "Placeholder"
-                    : new Date(bar.timestamp).toLocaleDateString()}
+              {!bar.isEmpty && (
+                <div className="uptime-tooltip">
+                  <div className="tooltip-time">
+                    {new Date(bar.timestamp).toLocaleDateString()}
+                  </div>
+                  <div className={`tooltip-status ${isUp ? "up" : "down"}`}>
+                    {getBarTooltipText(bar)}
+                  </div>
                 </div>
-                <div className={`tooltip-status ${isUp ? "up" : "down"}`}>
-                  {getBarTooltipText(bar)}
-                </div>
-              </div>
+              )}
             </div>
           );
         })}
@@ -273,13 +302,13 @@ export default function PublicStatusPage() {
                   rel="noreferrer"
                   className="status-monitor-row__url"
                 >
-                  {monitor.url}{" "}
-                  <FiExternalLink size={10} style={{ marginLeft: "2px" }} />
+                  {monitor.url}
+                  <FiExternalLink size={11} style={{ marginLeft: "4px" }} />
                 </a>
               </div>
 
               <div className="status-monitor-row__history">
-                {renderMonitorBars(monitor.recentLogs)}
+                {renderMonitorBars(monitor.recentLogs || [])}
                 <div
                   className={`status-monitor-row__badge ${monitor.status || "unknown"}`}
                 >
@@ -310,8 +339,8 @@ export default function PublicStatusPage() {
                 <div className="status-incident-row__header">
                   <div>
                     <h3>{incident.title}</h3>
-                    <p>
-                      {incident.severity} · {incident.state} ·{" "}
+                    <p className="status-incident-row__meta">
+                      {incident.severity} ·{" "}
                       {new Date(incident.startedAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -322,21 +351,32 @@ export default function PublicStatusPage() {
                   </span>
                 </div>
                 {incident.summary && <MarkdownBlock value={incident.summary} />}
-                <div className="status-incident-row__services">
-                  {(incident.affectedServices || []).map((service) => (
-                    <span key={service.monitorId || service.name}>
-                      {service.name}
-                    </span>
-                  ))}
-                </div>
-                <div className="status-incident-row__timeline">
-                  {(incident.timeline || []).slice(-3).map((item) => (
-                    <div key={item._id || item.createdAt}>
-                      <strong>{item.type.replace(/_/g, " ")}</strong>
-                      <span>{item.message}</span>
-                    </div>
-                  ))}
-                </div>
+
+                {incident.affectedServices?.length > 0 && (
+                  <div className="status-incident-row__services">
+                    {incident.affectedServices.map((service) => (
+                      <span key={service.monitorId || service.name}>
+                        {service.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {incident.timeline?.length > 0 && (
+                  <div className="status-incident-row__timeline">
+                    {incident.timeline.slice(-3).map((item, idx) => (
+                      <div
+                        key={item._id || idx}
+                        className={`status-incident-row__timeline-item ${incident.state}`}
+                      >
+                        <strong>
+                          {item.type ? item.type.replace(/_/g, " ") : "Update"}
+                        </strong>
+                        <span>{item.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </article>
             ))
           )}
@@ -351,11 +391,12 @@ export default function PublicStatusPage() {
               {AppName}
             </a>
           </div>
-          <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.2)" }}>
+          <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)" }}>
             Refreshes automatically via live monitors
           </div>
         </footer>
       )}
+
       {isEmbed && (
         <div
           style={{
@@ -363,7 +404,7 @@ export default function PublicStatusPage() {
             justifyContent: "flex-end",
             width: "100%",
             maxWidth: "800px",
-            marginTop: "8px",
+            marginTop: "12px",
           }}
         >
           <a
@@ -372,7 +413,7 @@ export default function PublicStatusPage() {
             rel="noreferrer"
             className="status-footer__link"
             style={{
-              fontSize: "11px",
+              fontSize: "12px",
               display: "flex",
               alignItems: "center",
               gap: "4px",
@@ -380,7 +421,7 @@ export default function PublicStatusPage() {
             }}
           >
             <span>Powered by {AppName}</span>
-            <FiExternalLink size={10} />
+            <FiExternalLink size={11} />
           </a>
         </div>
       )}
