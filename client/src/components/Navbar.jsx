@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hook/useAuth";
 import api from "../api/axios";
 import "../styles/Navbar.css";
+import Avatar from "./Avatar";
 import AppName from "../AppName";
 import logo from "../assets/logo.png";
 import {
@@ -10,9 +11,10 @@ import {
   FiChevronDown,
   FiMoon,
   FiSun,
-  FiExternalLink,
   FiLogOut,
   FiUser,
+  FiMenu,
+  FiX,
 } from "react-icons/fi";
 
 export default function Navbar() {
@@ -22,12 +24,25 @@ export default function Navbar() {
 
   const [isProcessingLogout, setIsProcessingLogout] = useState(false);
   const [isMobileNavExpanded, setIsMobileNavExpanded] = useState(false);
+  const [isLeftDrawerOpen, setIsLeftDrawerOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isThemeSaving, setIsThemeSaving] = useState(false);
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const { data } = await api.get("/config");
+        if (data.isDemoMode) setIsDemoMode(true);
+      } catch (err) {
+      }
+    };
+    fetchConfig();
+  }, []);
 
   const userMenuRef = useRef(null);
   const notifMenuRef = useRef(null);
@@ -45,6 +60,7 @@ export default function Navbar() {
         setIsUserMenuOpen(false);
         setIsNotifOpen(false);
         setIsMobileNavExpanded(false);
+        setIsLeftDrawerOpen(false);
       }
     };
 
@@ -69,7 +85,7 @@ export default function Navbar() {
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 20000); // refresh every 20s
+    const interval = setInterval(fetchNotifications, 20000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
@@ -99,6 +115,7 @@ export default function Navbar() {
     setIsMobileNavExpanded(false);
     setIsUserMenuOpen(false);
     setIsNotifOpen(false);
+    setIsLeftDrawerOpen(false);
   }, [location.pathname]);
 
   const executeLogout = async () => {
@@ -133,6 +150,10 @@ export default function Navbar() {
 
   const navLinks = [
     { to: "/dashboard", label: "Dashboard" },
+    { to: "/heartbeats", label: "Heartbeats" },
+    { to: "/synthetic", label: "Synthetic" },
+    { to: "/api-monitors", label: "API Monitors" },
+    { to: "/maintenance", label: "Maintenance" },
     { to: "/analytics", label: "Analytics" },
     { to: "/incidents", label: "Incidents" },
   ];
@@ -140,6 +161,17 @@ export default function Navbar() {
   return (
     <nav className="navbar" aria-label="Main Navigation">
       <div className="navbar-inner">
+        {activeUser && (
+          <button
+            className="left-hamburger"
+            onClick={() => setIsLeftDrawerOpen(true)}
+            aria-label="Open navigation drawer"
+            aria-expanded={isLeftDrawerOpen}
+          >
+            <FiMenu size={20} />
+          </button>
+        )}
+
         {/* Brand */}
         <Link
           to="/dashboard"
@@ -148,25 +180,27 @@ export default function Navbar() {
         >
           <img src={logo} alt="" className="brand-logo" />
           <span className="brand-text">{AppName}</span>
+          {isDemoMode && (
+            <span
+              className="demo-badge"
+              style={{
+                fontSize: "10px",
+                fontWeight: "700",
+                background: "rgba(102, 85, 255, 0.2)",
+                color: "var(--accent)",
+                padding: "2px 6px",
+                borderRadius: "10px",
+                marginLeft: "8px",
+              }}
+              title="Demo Mode: Data resets automatically"
+            >
+              DEMO
+            </span>
+          )}
         </Link>
 
         {activeUser && (
           <>
-            {/* Desktop Nav Links */}
-            <div className="navbar-links desktop-only" role="navigation">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={`navbar-link ${isActive(link.to) ? "navbar-link--active" : ""}`}
-                  aria-current={isActive(link.to) ? "page" : undefined}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Notification Control Element */}
             <div
               className="navbar-notif-container desktop-only"
               ref={notifMenuRef}
@@ -255,11 +289,7 @@ export default function Navbar() {
                 aria-haspopup="true"
                 aria-label="User contextual profile menu"
               >
-                <span className="user-trigger__avatar">
-                  {(activeUser.name ||
-                    activeUser.email ||
-                    "?")[0].toUpperCase()}
-                </span>
+                <Avatar user={activeUser} size="sm" />
                 <span className="user-trigger__email">{activeUser.email}</span>
                 <FiChevronDown
                   className={`user-trigger__chevron ${isUserMenuOpen ? "open" : ""}`}
@@ -340,9 +370,7 @@ export default function Navbar() {
       {isMobileNavExpanded && activeUser && (
         <div className="mobile-menu">
           <div className="mobile-menu__user">
-            <span className="mobile-menu__avatar">
-              {(activeUser.name || activeUser.email || "?")[0].toUpperCase()}
-            </span>
+            <Avatar user={activeUser} size="md" />
             <div className="mobile-menu__user-meta">
               <p className="mobile-menu__name">{activeUser.name || "—"}</p>
               <p className="mobile-menu__email">{activeUser.email}</p>
@@ -400,15 +428,6 @@ export default function Navbar() {
           <div className="mobile-menu__divider" />
 
           <div className="mobile-menu__links">
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={`mobile-menu__link ${isActive(link.to) ? "mobile-menu__link--active" : ""}`}
-              >
-                {link.label}
-              </Link>
-            ))}
             <Link
               to="/profile"
               className={`mobile-menu__link ${isActive("/profile") ? "mobile-menu__link--active" : ""}`}
@@ -449,6 +468,49 @@ export default function Navbar() {
             )}
           </button>
         </div>
+      )}
+
+      {/* Left Navigation Drawer */}
+      {activeUser && (
+        <>
+          <div
+            className={`nav-drawer-overlay ${isLeftDrawerOpen ? "open" : ""}`}
+            onClick={() => setIsLeftDrawerOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            className={`nav-drawer ${isLeftDrawerOpen ? "open" : ""}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Main Navigation Drawer"
+          >
+            <div className="nav-drawer__header">
+              <div className="navbar-brand">
+                <img src={logo} alt="" className="brand-logo" />
+                <span className="brand-text">{AppName}</span>
+              </div>
+              <button
+                className="nav-drawer__close"
+                onClick={() => setIsLeftDrawerOpen(false)}
+                aria-label="Close drawer"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+            <div className="nav-drawer__links">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`nav-drawer__link ${isActive(link.to) ? "nav-drawer__link--active" : ""}`}
+                  onClick={() => setIsLeftDrawerOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </>
       )}
     </nav>
   );

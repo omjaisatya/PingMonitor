@@ -757,3 +757,109 @@
     width: 100%;
   }
 }
+
+.avatar-settings-container {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.avatar-settings-preview-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.profile-header-avatar {
+  box-shadow: 0 0 0 4px rgba(29, 158, 117, 0.15);
+}
+
+.avatar-delete-btn {
+  width: auto;
+}
+
+.avatar-settings-upload-side {
+  flex: 1;
+}
+
+/* Upload drag and drop zone */
+.upload-zone {
+  border: 2px dashed var(--border, #2a2a2a);
+  border-radius: 10px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.01);
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.upload-zone:hover,
+.upload-zone--active {
+  border-color: var(--green, #1d9e75);
+  background: rgba(29, 158, 117, 0.03);
+}
+
+.upload-zone__icon {
+  color: var(--text-muted, #888);
+  transition: color 0.2s;
+}
+
+.upload-zone:hover .upload-zone__icon,
+.upload-zone--active .upload-zone__icon {
+  color: var(--green, #1d9e75);
+}
+
+.upload-zone__text {
+  font-size: 14px;
+  color: var(--text-secondary, #aaa);
+  margin: 0;
+}
+
+.upload-zone__text strong {
+  color: var(--green, #1d9e75);
+}
+
+.upload-zone__subtext {
+  font-size: 11px;
+  color: var(--text-muted, #888);
+}
+
+/* Preview Actions styling */
+.preview-actions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.preview-actions-text {
+  font-size: 14px;
+  color: var(--text-secondary, #aaa);
+  margin: 0;
+}
+
+.preview-actions-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .avatar-settings-container {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .avatar-settings-preview-side {
+    margin-bottom: 8px;
+  }
+}

@@ -9,6 +9,15 @@ import MonitorStats from "../models/MonitorStats.js";
 import AlertLog from "../models/AlertLog.js";
 import EmailLog from "../models/EmailLog.js";
 import InAppNotification from "../models/InAppNotification.js";
+import Heartbeat from "../models/Heartbeat.js";
+import HeartbeatLog from "../models/HeartbeatLog.js";
+import { dispatchHeartbeatNotifications } from "./heartbeatNotificationService.js";
+import { getMonitorRegions } from "../config/regions.js";
+import {
+  createCheckGroupId,
+  storeRegionalResult,
+  aggregateRegionalCheck,
+} from "./regionalAggregationService.js";
 import sendAlert, { getAlertTemplate } from "./emailService.js";
 import { Resend } from "resend";
 import { RESEND_API_KEY, SENDER_EMAIL } from "../config/env.config.js";
@@ -16,6 +25,22 @@ import {
   handleMonitorFailureIncident,
   handleMonitorRecoveryIncident,
 } from "./incidentService.js";
+import fs from "fs";
+import path from "path";
+import { isRedisQueueEnabled, getQueues } from "./queueService.js";
+import SyntheticMonitor from "../models/SyntheticMonitor.js";
+import SyntheticRun from "../models/SyntheticRun.js";
+import { processSyntheticCheck } from "../workers/syntheticWorker.js";
+import ApiMonitor from "../models/ApiMonitor.js";
+import { processApiCheck } from "../workers/apiWorker.js";
+import { IS_DEMO_MODE } from "../config/env.config.js";
+import { seedDemoData } from "../scripts/seedDemoData.js";
+import {
+  isMaintenanceActive,
+  evaluateMaintenanceWindows,
+} from "./maintenanceService.js";
+import { generateReportData } from "./reportService.js";
+import { sendScheduledReportEmail } from "./emailService.js";
 
 // Keep-Alive connection pooling agents
 const httpAgent = new http.Agent({ keepAlive: true });
@@ -58,6 +83,14 @@ const dispatchNotifications = async (
   downtimeSec = 0,
 ) => {
   try {
+    const isMaintenance = await isMaintenanceActive(monitor._id, "monitor");
+    if (isMaintenance) {
+      console.log(
+        `Alert suppressed for ${monitor.name} due to active maintenance window.`,
+      );
+      return;
+    }
+
     // 1. Check deduplication / cool-down for DOWN or SLOW events
     if (eventType === "down" || eventType === "slow") {
       if (monitor.lastAlertedAt && monitor.alertCooldown) {
@@ -288,6 +321,7 @@ const pingmonitor = async (monitor) => {
   let status = "down";
   let statusCode = null;
   let responseTime = null;
+  let errorMsg = "";
 
   try {
     const response = await axios.get(monitor.url, {
@@ -301,176 +335,44 @@ const pingmonitor = async (monitor) => {
   } catch (error) {
     responseTime = Date.now() - start;
     statusCode = error.response ? error.response.status : null;
+    errorMsg = error.message;
   }
 
-  await Log.create({
-    monitorId: monitor._id,
-    status,
-    statusCode,
-    responseTime,
-  });
+  const checkGroupId = createCheckGroupId(monitor._id);
+  const regions = getMonitorRegions();
 
-  const previousStatus = monitor.status;
+  const offsets = {
+    us: 120,
+    europe: 180,
+    asia: 30,
+    australia: 90,
+  };
 
-  if (status === "up") {
-    // Reset consecutive failures
-    await Monitor.findByIdAndUpdate(monitor._id, { consecutiveFailures: 0 });
+  await Promise.all(
+    regions.map((region) => {
+      const offset = offsets[region] || 0;
+      const simulatedResponseTime =
+        status === "up"
+          ? Math.max(
+              10,
+              Math.round(responseTime + offset + (Math.random() * 20 - 10)),
+            )
+          : null;
 
-    if (previousStatus === "down") {
-      // 1. Calculate Downtime
-      const downtimeSec = await calculateDowntime(monitor._id);
-
-      // 2. Handle Recovery Notification Preferences
-      const notifyOnRecovery = monitor.notifyOnRecovery ?? true;
-      const recoveryDelay = monitor.recoveryAlertDelay ?? 0;
-
-      if (notifyOnRecovery) {
-        if (recoveryDelay === 0) {
-          // Send immediately
-          const message = `Monitor ${monitor.name} is back UP (HTTP ${statusCode})`;
-          await dispatchNotifications(
-            monitor,
-            "recovered",
-            statusCode,
-            responseTime,
-            message,
-            downtimeSec,
-          );
-          await handleMonitorRecoveryIncident({
-            monitor,
-            statusCode,
-            responseTime,
-            downtimeSec,
-          });
-          await Monitor.findByIdAndUpdate(monitor._id, {
-            status: "up",
-            firstRecoveredAt: null,
-          });
-        } else {
-          // Delay notification - set recovery timestamp
-          await Monitor.findByIdAndUpdate(monitor._id, {
-            status: "up",
-            firstRecoveredAt: new Date(),
-          });
-          console.log(
-            `Delaying recovery alert for ${monitor.name} by ${recoveryDelay} minutes.`,
-          );
-        }
-      } else {
-        // Recovery alerts disabled
-        await Monitor.findByIdAndUpdate(monitor._id, {
-          status: "up",
-          firstRecoveredAt: null,
-        });
-        console.log(
-          `Recovery alert muted for ${monitor.name} per preferences.`,
-        );
-      }
-    } else {
-      // previousStatus was "up"
-      // Check if we have a pending delayed recovery notification
-      if (monitor.firstRecoveredAt) {
-        const elapsedMs =
-          Date.now() - new Date(monitor.firstRecoveredAt).getTime();
-        const delayMs = (monitor.recoveryAlertDelay || 0) * 60 * 1000;
-
-        if (elapsedMs >= delayMs) {
-          const downtimeSec = await calculateDowntime(monitor._id);
-          const message = `Monitor ${monitor.name} is back UP (HTTP ${statusCode})`;
-          await dispatchNotifications(
-            monitor,
-            "recovered",
-            statusCode,
-            responseTime,
-            message,
-            downtimeSec,
-          );
-          await handleMonitorRecoveryIncident({
-            monitor,
-            statusCode,
-            responseTime,
-            downtimeSec,
-          });
-          await Monitor.findByIdAndUpdate(monitor._id, {
-            firstRecoveredAt: null,
-          });
-          console.log(
-            `Delayed recovery alert dispatched for ${monitor.name} after ${monitor.recoveryAlertDelay} minutes.`,
-          );
-        }
-      } else {
-        // Latency threshold alert checking
-        const latencyLimit = monitor.latencyThreshold || 2000;
-        if (responseTime > latencyLimit) {
-          const message = `Monitor ${monitor.name} is SLOW. Latency: ${responseTime}ms (threshold: ${latencyLimit}ms)`;
-          await dispatchNotifications(
-            monitor,
-            "slow",
-            statusCode,
-            responseTime,
-            message,
-          );
-        }
-      }
-    }
-  }
-
-  if (status === "down") {
-    const updatedFailures = (monitor.consecutiveFailures || 0) + 1;
-    await Monitor.findByIdAndUpdate(monitor._id, {
-      consecutiveFailures: updatedFailures,
-      firstRecoveredAt: null, // reset recovery tracker on failure
-    });
-
-    const limit = monitor.retryLimit || 1;
-
-    if (updatedFailures >= limit) {
-      if (previousStatus !== "down") {
-        // Trigger DOWN Alert
-        const message = `Monitor ${monitor.name} is DOWN. HTTP ${statusCode || "No Response"} (failed ${updatedFailures} consecutive times)`;
-        await dispatchNotifications(
-          monitor,
-          "down",
-          statusCode,
-          responseTime,
-          message,
-        );
-      } else {
-        // Still down, cooldown limits will be checked inside notification dispatcher
-        const message = `Monitor ${monitor.name} remains DOWN. HTTP ${statusCode || "No Response"}`;
-        await dispatchNotifications(
-          monitor,
-          "down",
-          statusCode,
-          responseTime,
-          message,
-        );
-      }
-      await handleMonitorFailureIncident({
-        monitor,
+      return storeRegionalResult({
+        checkGroupId,
+        monitorId: monitor._id,
+        status,
         statusCode,
-        responseTime,
-        failureCount: updatedFailures,
+        responseTime: simulatedResponseTime,
+        error: errorMsg,
+        region,
+        checkedAt: new Date(),
       });
-      await Monitor.findByIdAndUpdate(monitor._id, {
-        status: "down",
-        firstRecoveredAt: null,
-      });
-    }
-  }
-
-  // Update daily stats incrementally in all cases
-  await updateDailyStats(
-    monitor._id,
-    status,
-    responseTime,
-    statusCode,
-    previousStatus,
+    }),
   );
 
-  console.log(
-    `[${new Date().toLocaleTimeString()}] ${monitor.name} → ${status.toUpperCase()} (${statusCode}) ${responseTime}ms`,
-  );
+  await aggregateRegionalCheck(checkGroupId);
 };
 
 const startEmailRetryCron = () => {
@@ -550,6 +452,293 @@ const startEmailRetryCron = () => {
   });
 };
 
+const getHeartbeatIntervalMinutes = (interval) => {
+  switch (interval) {
+    case "1min":
+      return 1;
+    case "5min":
+      return 5;
+    case "15min":
+      return 15;
+    case "hourly":
+      return 60;
+    case "daily":
+      return 1440;
+    default:
+      return 5;
+  }
+};
+
+const evaluateHeartbeats = async () => {
+  console.log("cron: evaluating active heartbeats...");
+  try {
+    const activeHeartbeats = await Heartbeat.find({ isActive: true });
+    const now = new Date();
+
+    for (const heartbeat of activeHeartbeats) {
+      let isTimeout = false;
+      const gracePeriodMs = (heartbeat.gracePeriod || 2) * 60 * 1000;
+
+      if (heartbeat.nextExpectedPingAt) {
+        const expectedTime = new Date(heartbeat.nextExpectedPingAt).getTime();
+        if (now.getTime() > expectedTime + gracePeriodMs) {
+          isTimeout = true;
+        }
+      } else {
+        const createdTime = new Date(heartbeat.createdAt).getTime();
+        const intervalMs =
+          getHeartbeatIntervalMinutes(heartbeat.interval) * 60 * 1000;
+        if (now.getTime() > createdTime + intervalMs + gracePeriodMs) {
+          isTimeout = true;
+        }
+      }
+
+      if (isTimeout) {
+        const prevStatus = heartbeat.status;
+        heartbeat.status = "down";
+        heartbeat.consecutiveMissed += 1;
+        heartbeat.pingCount += 1;
+        heartbeat.downCount += 1;
+
+        const intervalMinutes = getHeartbeatIntervalMinutes(heartbeat.interval);
+        heartbeat.nextExpectedPingAt = new Date(
+          now.getTime() + intervalMinutes * 60 * 1000,
+        );
+
+        await heartbeat.save();
+
+        await HeartbeatLog.create({
+          heartbeatId: heartbeat._id,
+          status: "down",
+          timestamp: now,
+        });
+
+        if (prevStatus !== "down") {
+          const message = `Heartbeat monitor ${heartbeat.name} missed expected ping check-in. Status: DOWN.`;
+          await dispatchHeartbeatNotifications(heartbeat, "down", message);
+        } else {
+          const message = `Heartbeat monitor ${heartbeat.name} remains DOWN.`;
+          await dispatchHeartbeatNotifications(heartbeat, "down", message);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("cron: heartbeat evaluation failed:", error.message);
+  }
+};
+
+const evaluateSyntheticMonitors = async () => {
+  console.log("cron: evaluating active synthetic monitors...");
+  try {
+    const activeSynthetics = await SyntheticMonitor.find({ isActive: true });
+    const now = Date.now();
+
+    for (const monitor of activeSynthetics) {
+      let shouldRun = false;
+      if (!monitor.lastRunAt) {
+        shouldRun = true;
+      } else {
+        const elapsedMs = now - new Date(monitor.lastRunAt).getTime();
+        const intervalMs = monitor.interval * 60 * 1000;
+        if (elapsedMs >= intervalMs) {
+          shouldRun = true;
+        }
+      }
+
+      if (shouldRun) {
+        if (isRedisQueueEnabled()) {
+          const queues = getQueues();
+          await queues.synthetic.add(
+            `synthetic:${monitor._id}`,
+            { monitorId: monitor._id },
+            {
+              removeOnComplete: 100,
+              removeOnFail: 200,
+            },
+          );
+          console.log(`cron: enqueued synthetic check for ${monitor.name}`);
+        } else {
+          console.log(
+            `cron: running inline synthetic check for ${monitor.name}`,
+          );
+          processSyntheticCheck(monitor._id).catch((err) => {
+            console.error(
+              `cron: inline synthetic execution failed for ${monitor.name}:`,
+              err.message,
+            );
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error("cron: synthetic monitors evaluation failed:", error.message);
+  }
+};
+
+const runDailyCleanup = async () => {
+  console.log("cron: running daily logs and media cleanup...");
+  try {
+    const cutoffDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const expiredRuns = await SyntheticRun.find({
+      createdAt: { $lt: cutoffDate },
+    });
+
+    let deletedCount = 0;
+    for (const run of expiredRuns) {
+      if (run.screenshotUrl) {
+        const filePath = path.join(process.cwd(), run.screenshotUrl);
+        if (fs.existsSync(filePath)) {
+          await fs.promises
+            .unlink(filePath)
+            .catch((err) =>
+              console.warn(
+                `Failed to delete screenshot: ${filePath}`,
+                err.message,
+              ),
+            );
+        }
+      }
+      if (run.videoUrl) {
+        const filePath = path.join(process.cwd(), run.videoUrl);
+        if (fs.existsSync(filePath)) {
+          await fs.promises
+            .unlink(filePath)
+            .catch((err) =>
+              console.warn(`Failed to delete video: ${filePath}`, err.message),
+            );
+        }
+      }
+      deletedCount++;
+    }
+    console.log(
+      `cron: cleanup completed. Deleted media files for ${deletedCount} expired runs.`,
+    );
+  } catch (error) {
+    console.error("cron: daily cleanup failed:", error.message);
+  }
+};
+
+const evaluateApiMonitors = async () => {
+  console.log("cron: evaluating active API monitors...");
+  try {
+    const activeApis = await ApiMonitor.find({ isActive: true });
+    const now = Date.now();
+
+    for (const monitor of activeApis) {
+      let shouldRun = false;
+      if (!monitor.lastRunAt) {
+        shouldRun = true;
+      } else {
+        const elapsedMs = now - new Date(monitor.lastRunAt).getTime();
+        const intervalMs = monitor.interval * 60 * 1000;
+        if (elapsedMs >= intervalMs) {
+          shouldRun = true;
+        }
+      }
+
+      if (shouldRun) {
+        if (isRedisQueueEnabled()) {
+          const queues = getQueues();
+          await queues.api.add(
+            `api:${monitor._id}`,
+            { monitorId: monitor._id },
+            {
+              removeOnComplete: 100,
+              removeOnFail: 200,
+            },
+          );
+          console.log(`cron: enqueued API check for ${monitor.name}`);
+        } else {
+          console.log(`cron: running inline API check for ${monitor.name}`);
+          processApiCheck(monitor._id).catch((err) => {
+            console.error(
+              `cron: inline API execution failed for ${monitor.name}:`,
+              err.message,
+            );
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error("cron: API monitors evaluation failed:", error.message);
+  }
+};
+
+const evaluateScheduledReports = async () => {
+  console.log("cron: evaluating scheduled email reports...");
+  try {
+    const users = await User.find({ "emailReportConfig.enabled": true });
+
+    for (const user of users) {
+      const config = user.emailReportConfig;
+
+      const now = new Date();
+      const localTimeStr = now.toLocaleTimeString("en-US", {
+        timeZone: config.timezone,
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const currentHour = localTimeStr.split(":")[0];
+      const deliveryHour = config.deliveryTime.split(":")[0];
+
+      if (currentHour === deliveryHour) {
+        let shouldSend = false;
+
+        if (!config.lastReportSentAt) {
+          shouldSend = true;
+        } else {
+          const lastSent = new Date(config.lastReportSentAt);
+          const elapsedHours = (now - lastSent) / (1000 * 60 * 60);
+
+          if (config.frequency === "daily" && elapsedHours >= 23) {
+            shouldSend = true;
+          } else if (config.frequency === "weekly" && elapsedHours >= 24 * 6) {
+            shouldSend = true;
+          } else if (
+            config.frequency === "monthly" &&
+            elapsedHours >= 24 * 28
+          ) {
+            shouldSend = true;
+          }
+        }
+
+        if (shouldSend) {
+          try {
+            const reportData = await generateReportData(
+              user._id,
+              config.sections,
+              config.frequency,
+            );
+
+            await sendScheduledReportEmail({
+              email: user.email,
+              name: user.name,
+              frequency: config.frequency,
+              reportData,
+            });
+
+            user.emailReportConfig.lastReportSentAt = new Date();
+            await user.save();
+            console.log(`Scheduled report sent to ${user.email}`);
+          } catch (err) {
+            console.error(
+              `Failed to send scheduled report to ${user.email}:`,
+              err.message,
+            );
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error(
+      "cron: scheduled email reports evaluation failed:",
+      error.message,
+    );
+  }
+};
+
 const startCron = () => {
   cron.schedule("* * * * *", async () => {
     console.log("cron is started - checking monitor");
@@ -557,12 +746,15 @@ const startCron = () => {
     try {
       const monitors = await Monitor.find({ isActive: true }); //only resume
 
-      if (monitors.length === 0) {
-        console.log("No monitor find");
-        return;
-      }
+      const monitorPings = monitors.map((monitor) => pingmonitor(monitor));
 
-      await Promise.allSettled(monitors.map((monitor) => pingmonitor(monitor)));
+      await Promise.allSettled([
+        evaluateMaintenanceWindows(),
+        ...monitorPings,
+        evaluateHeartbeats(),
+        evaluateSyntheticMonitors(),
+        evaluateApiMonitors(),
+      ]);
     } catch (error) {
       console.log("cron error", error.message);
     }
@@ -570,6 +762,18 @@ const startCron = () => {
 
   // Start failed emails retry cron
   startEmailRetryCron();
+
+  cron.schedule("0 0 * * *", async () => {
+    await runDailyCleanup();
+    if (IS_DEMO_MODE) {
+      console.log("cron: running daily demo data reset...");
+      await seedDemoData();
+    }
+  });
+
+  cron.schedule("0 * * * *", async () => {
+    await evaluateScheduledReports();
+  });
 };
 
 export default startCron;

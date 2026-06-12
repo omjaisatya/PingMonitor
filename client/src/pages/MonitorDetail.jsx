@@ -325,7 +325,7 @@ export default function MonitorDetails() {
           <div className="detail-header-left">
             <div className="detail-title-row">
               <h1 className="page-title">{monitor.name}</h1>
-              <span className={`badge badge-${monitor.status}`}>
+              <span className={`badge badge-${monitor.status}`} style={{ alignSelf: "center", transform: "translateY(2px)" }}>
                 {monitor.status}
               </span>
             </div>

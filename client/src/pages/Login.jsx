@@ -6,6 +6,7 @@ import "../styles/LoginRegis.css";
 import AppName from "../AppName";
 import logo from "../assets/logo.png";
 import { toast } from "../context/ToastContext";
+import AuthShowcase from "../components/AuthShowcase";
 
 const parseLockoutMinutes = (message = "") => {
   const match = message.match(/(\d+)\s*minute/i);
@@ -27,6 +28,16 @@ export default function Login() {
   const [searchParams] = useSearchParams();
 
   const [credentials, setCredentials] = useState({ email: "", password: "" });
+  const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("pingmonitor_saved_email");
+    const savedRemember = localStorage.getItem("pingmonitor_remember_me") === "true";
+    if (savedRemember && savedEmail) {
+      setCredentials((prev) => ({ ...prev, email: savedEmail }));
+      setRememberMe(true);
+    }
+  }, []);
   const [resetEmail, setResetEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -37,6 +48,19 @@ export default function Login() {
 
   const [lockoutMinutes, setLockoutMinutes] = useState(null);
   const [attemptsWarning, setAttemptsWarning] = useState(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const { data } = await api.get("/config");
+        if (data.isDemoMode) setIsDemoMode(true);
+      } catch {
+        // ignore
+      }
+    };
+    fetchConfig();
+  }, []);
 
   const sessionCompromised =
     searchParams.get("reason") === "session_compromised";
@@ -95,6 +119,13 @@ export default function Login() {
       if (data.user && data.token) {
         toast.success(data.message || "Login successful");
         establishSession(data.user, data.token, data.csrfToken);
+        if (rememberMe) {
+          localStorage.setItem("pingmonitor_saved_email", email);
+          localStorage.setItem("pingmonitor_remember_me", "true");
+        } else {
+          localStorage.removeItem("pingmonitor_saved_email");
+          localStorage.removeItem("pingmonitor_remember_me");
+        }
         navigate("/dashboard");
       }
     } catch (err) {
@@ -170,209 +201,246 @@ export default function Login() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-brand">
-        <img src={logo} alt="app-logo" className="brand-logo" />
-        <span className="auth-brand-name">{AppName}</span>
-      </div>
+    <div className="auth-container">
+      {/* Left Side: Product Showcase */}
+      <AuthShowcase />
 
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1 className="auth-title">
-            {formMode === "reset"
-              ? "Reset password"
-              : formMode === "forgot"
-                ? "Recover password"
-                : "Welcome back"}
-          </h1>
-          <p className="auth-subtitle">
-            {formMode === "reset"
-              ? "choose a new secure password"
-              : formMode === "forgot"
-                ? "get a reset link in your inbox"
-                : "sign in to your monitoring dashboard"}
+      {/* Right Side: Authentication Area */}
+      <div className="auth-panel">
+        <div className="auth-panel-content">
+          <div className="auth-brand">
+            <img src={logo} alt="app-logo" className="brand-logo" />
+            <span className="auth-brand-name">{AppName}</span>
+          </div>
+
+          {formMode === "login" && (
+            <div className="auth-header">
+              <h1 className="auth-title">Welcome back</h1>
+              <p className="auth-subtitle">Sign in to your monitoring dashboard</p>
+            </div>
+          )}
+
+          {formMode === "forgot" && (
+            <div className="auth-header">
+              <h1 className="auth-title">Recover password</h1>
+              <p className="auth-subtitle">Get a reset link in your inbox</p>
+            </div>
+          )}
+
+          {formMode === "reset" && (
+            <div className="auth-header">
+              <h1 className="auth-title">Reset password</h1>
+              <p className="auth-subtitle">Choose a new secure password</p>
+            </div>
+          )}
+
+          {sessionCompromised && (
+            <div className="auth-alert auth-alert--danger">
+              <span className="auth-alert__icon">⚠</span>
+              <span>
+                Your session was terminated for security reasons. Please sign in
+                again.
+              </span>
+            </div>
+          )}
+
+          {lockoutMinutes && (
+            <div className="auth-alert auth-alert--warning">
+              <span className="auth-alert__icon">🔒</span>
+              <span>
+                Account temporarily locked. Try again in{" "}
+                <strong>{lockoutMinutes} minutes</strong>.
+              </span>
+            </div>
+          )}
+
+
+
+          {formMode === "forgot" && (
+            <form className="auth-form" onSubmit={requestPasswordReset}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="reset-email">
+                  Email address
+                </label>
+                <input
+                  className="form-input"
+                  id="reset-email"
+                  type="email"
+                  name="email"
+                  placeholder="you@example.com"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary btn-full"
+                disabled={isRequestingReset}
+              >
+                {isRequestingReset ? (
+                  <>
+                    <span className="spinner" /> Sending...
+                  </>
+                ) : (
+                  "Send reset link"
+                )}
+              </button>
+            </form>
+          )}
+
+          {formMode === "reset" && (
+            <form className="auth-form" onSubmit={executePasswordReset}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="new-password">
+                  New password
+                </label>
+                <div className="password-field">
+                  <input
+                    className="form-input"
+                    id="new-password"
+                    type={showNewPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Min. 6 characters"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    className="password-toggle"
+                    type="button"
+                    onClick={() => setShowNewPassword((value) => !value)}
+                  >
+                    {showNewPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary btn-full"
+                disabled={isResettingPassword}
+              >
+                {isResettingPassword ? (
+                  <>
+                    <span className="spinner" /> Updating...
+                  </>
+                ) : (
+                  "Reset password"
+                )}
+              </button>
+            </form>
+          )}
+
+          {formMode === "login" && (
+            <>
+              <form className="auth-form" onSubmit={executeLogin}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="email">
+                    Email address
+                  </label>
+                  <input
+                    className="form-input"
+                    id="email"
+                    type="email"
+                    name="email"
+                    placeholder="you@example.com"
+                    value={credentials.email}
+                    onChange={handleInputUpdate}
+                    autoComplete="email"
+                    disabled={!!lockoutMinutes}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="password">
+                    Password
+                  </label>
+                  <div className="password-field">
+                    <input
+                      className="form-input"
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      placeholder="••••••••"
+                      value={credentials.password}
+                      onChange={handleInputUpdate}
+                      autoComplete="current-password"
+                      disabled={!!lockoutMinutes}
+                    />
+                    <button
+                      className="password-toggle"
+                      type="button"
+                      onClick={() => setShowPassword((value) => !value)}
+                      disabled={!!lockoutMinutes}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Form Options: Remember Me & Forgot Password Link */}
+                <div className="form-options">
+                  <label className="checkbox-container">
+                    <input
+                      type="checkbox"
+                      name="rememberMe"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      disabled={!!lockoutMinutes}
+                    />
+                    <span className="checkbox-checkmark" />
+                    <span className="checkbox-label">Remember me</span>
+                  </label>
+                  <Link to="/login?mode=forgot" className="auth-link auth-link-small">
+                    Forgot password?
+                  </Link>
+                </div>
+
+                {attemptsWarning && (
+                  <p className="auth-attempts-warning">{attemptsWarning}</p>
+                )}
+
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-full"
+                  disabled={isLoggingIn || !!lockoutMinutes}
+                >
+                  {isLoggingIn ? (
+                    <>
+                      <span className="spinner" /> Verifying...
+                    </>
+                  ) : lockoutMinutes ? (
+                    `Locked for ${lockoutMinutes}m`
+                  ) : (
+                    "Sign In"
+                  )}
+                </button>
+
+                {isDemoMode && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-full btn-demo"
+                    onClick={() => {
+                      setCredentials({ email: "demo@example.com", password: "demo1234" });
+                    }}
+                  >
+                    Use Demo Account
+                  </button>
+                )}
+              </form>
+            </>
+          )}
+
+          <p className="auth-switch">
+            {formMode === "login" ? "Don't have an account? " : "Back to "}{" "}
+            <Link
+              to={formMode === "login" ? "/register" : "/login"}
+              className="auth-link"
+            >
+              {formMode === "login" ? "Create one" : "Sign in"}
+            </Link>
           </p>
         </div>
-
-        {sessionCompromised && (
-          <div className="auth-alert auth-alert--danger">
-            <span className="auth-alert__icon">⚠</span>
-            <span>
-              Your session was terminated for security reasons. Please sign in
-              again.
-            </span>
-          </div>
-        )}
-
-        {lockoutMinutes && (
-          <div className="auth-alert auth-alert--warning">
-            <span className="auth-alert__icon">🔒</span>
-            <span>
-              Account temporarily locked. Try again in{" "}
-              <strong>{lockoutMinutes} minutes</strong>.
-            </span>
-          </div>
-        )}
-
-        {formMode === "forgot" && (
-          <form className="auth-form" onSubmit={requestPasswordReset}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="reset-email">
-                Email
-              </label>
-              <input
-                className="form-input"
-                id="reset-email"
-                type="email"
-                name="email"
-                placeholder="you@example.com"
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
-                autoComplete="email"
-              />
-            </div>
-            <button
-              type="submit"
-              className="btn btn-primary btn-full"
-              disabled={isRequestingReset}
-            >
-              {isRequestingReset ? (
-                <>
-                  <span className="spinner" /> Sending...
-                </>
-              ) : (
-                "Send reset link"
-              )}
-            </button>
-          </form>
-        )}
-
-        {formMode === "reset" && (
-          <form className="auth-form" onSubmit={executePasswordReset}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="new-password">
-                New password
-              </label>
-              <div className="password-field">
-                <input
-                  className="form-input"
-                  id="new-password"
-                  type={showNewPassword ? "text" : "password"}
-                  name="password"
-                  placeholder="Min. 6 characters"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-                <button
-                  className="password-toggle"
-                  type="button"
-                  onClick={() => setShowNewPassword((value) => !value)}
-                >
-                  {showNewPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-            <button
-              type="submit"
-              className="btn btn-primary btn-full"
-              disabled={isResettingPassword}
-            >
-              {isResettingPassword ? (
-                <>
-                  <span className="spinner" /> Updating...
-                </>
-              ) : (
-                "Reset password"
-              )}
-            </button>
-          </form>
-        )}
-
-        {formMode === "login" && (
-          <form className="auth-form" onSubmit={executeLogin}>
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">
-                Email
-              </label>
-              <input
-                className="form-input"
-                id="email"
-                type="email"
-                name="email"
-                placeholder="you@example.com"
-                value={credentials.email}
-                onChange={handleInputUpdate}
-                autoComplete="email"
-                disabled={!!lockoutMinutes}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">
-                Password
-              </label>
-              <div className="password-field">
-                <input
-                  className="form-input"
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  placeholder="••••••••"
-                  value={credentials.password}
-                  onChange={handleInputUpdate}
-                  autoComplete="current-password"
-                  disabled={!!lockoutMinutes}
-                />
-                <button
-                  className="password-toggle"
-                  type="button"
-                  onClick={() => setShowPassword((value) => !value)}
-                  disabled={!!lockoutMinutes}
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-
-            {attemptsWarning && (
-              <p className="auth-attempts-warning">{attemptsWarning}</p>
-            )}
-
-            <button
-              type="submit"
-              className="btn btn-primary btn-full"
-              disabled={isLoggingIn || !!lockoutMinutes}
-            >
-              {isLoggingIn ? (
-                <>
-                  <span className="spinner" /> Verifying...
-                </>
-              ) : lockoutMinutes ? (
-                `Locked for ${lockoutMinutes}m`
-              ) : (
-                "Sign In →"
-              )}
-            </button>
-            <Link to="/login?mode=forgot" className="auth-link auth-link-small">
-              Forgot password?
-            </Link>
-          </form>
-        )}
-
-        <p className="auth-switch">
-          {formMode === "login" ? "Don't have an account? " : "Back to "}{" "}
-          <Link
-            to={formMode === "login" ? "/register" : "/login"}
-            className="auth-link"
-          >
-            {formMode === "login" ? "Create one" : "Sign in"}
-          </Link>
-        </p>
-      </div>
-
-      <div className="auth-bg-text" aria-hidden>
-        {AppName}
       </div>
     </div>
   );

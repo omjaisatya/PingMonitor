@@ -12,11 +12,14 @@ PingMonitor is an automated uptime monitoring tool that performs health checks o
 ## Key Features
 
 - **Secure Authentication**: JWT-based session security with bcrypt password hashing and token rotation.
-- **Real-Time Heartbeats**: Concurrent ping checks with configurable timeout limits.
-- **Insightful Logging**: Captures HTTP response status codes, latencies, and down-time histories.
-- **Smart Alerting**: Dispatch email alerts via Resend on state transitions (e.g., `UP` ➔ `DOWN`) without duplicates.
-- **Auto Data Purging**: Automated TTL indices to prune logs older than 7 days, maintaining a lightweight database.
-- **Docker Native**: Run the entire stack locally with a single command.
+- **Service Heartbeats**: Concurrent HTTP/HTTPS ping checks with latency tracking and quorum state checks.
+- **Passive Heartbeat Targets**: UUID v4 token public check-in targets to verify backend crons and scheduled tasks.
+- **User Avatar Profiles**: Image upload system integrated with Cloudinary, fallback-cascaded to Gravatars and initials DiceBear SVGs.
+- **Playwright Browser Synthetics**: Isolated VM-sandboxed browser script runner capturing timing metrics (Load, DOM Ready), console errors, network timings, failure screenshots, and screen recording videos.
+- **Advanced API Assertions**: Execute GET, POST, PUT, DELETE, and GraphQL checks, resolve placeholders variables, encrypt header secrets, validate comparative assertions, and diff response bodies.
+- **Smart Alerting**: Dispatch email alerts via Resend on state transitions without fatigue cooldowns.
+- **Auto Data Purging**: Automated TTL indices to prune logs and clean up local media screenshots/videos older than 7 days.
+- **Docker Native**: Run the entire MERN + Redis stack locally with a single command.
 
 ## Tech Stack
 
@@ -106,6 +109,23 @@ Ensure you have [Docker](https://www.docker.com/) installed and running on your 
    ```
 
 4. Open your browser to [http://localhost:5173](http://localhost:5173).
+
+## Demo Environment
+
+PingMonitor supports a dedicated **Demo Mode** (`IS_DEMO_MODE=true`) which transforms the application into an evaluation environment.
+
+### Features of Demo Mode
+- **Auto-Provisioning**: A `demo@example.com` account is automatically seeded with sample REST API monitors, Browser Synthetics, Heartbeats, and incident logs.
+- **Daily Reset**: Every night at midnight (00:00 server time), all demo data is automatically purged and recreated to maintain a clean testing slate.
+- **Email Bypass**: In Demo Mode, actual email dispatches via Resend are intercepted and bypassed for the `demo@example.com` account to prevent quota exhaustion and spamming.
+- **UI Integration**: The login screen features a "Use Demo Account" shortcut to bypass credential typing, and a persistent "DEMO" badge appears in the application's top navigation bar.
+
+### Running in Demo Mode
+To activate Demo Mode locally, simply append the variable to your backend configuration (`server/.env`):
+
+```env
+IS_DEMO_MODE=true
+```
 
 ## Environment Variable Schema
 

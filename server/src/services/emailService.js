@@ -1,10 +1,28 @@
 import { Resend } from "resend";
-import { SENDER_EMAIL, RESEND_API_KEY } from "../config/env.config.js";
+import {
+  SENDER_EMAIL,
+  RESEND_API_KEY,
+  IS_DEMO_MODE,
+} from "../config/env.config.js";
 import EmailLog from "../models/EmailLog.js";
 import User from "../models/User.js";
 import { emitIncidentEvent } from "./realtimeService.js";
 
 const resend = new Resend(RESEND_API_KEY);
+
+const _originalSend = resend.emails.send.bind(resend.emails);
+resend.emails.send = async (payload) => {
+  const isDemoUser =
+    payload.to === "demo@example.com" ||
+    (Array.isArray(payload.to) && payload.to.includes("demo@example.com"));
+  if (IS_DEMO_MODE || isDemoUser) {
+    console.log(
+      `[Demo Mode] Bypassed email sending to: ${payload.to} - Subject: ${payload.subject}`,
+    );
+    return { id: `mock_email_${Date.now()}` };
+  }
+  return _originalSend(payload);
+};
 
 const logEmailAttempt = async ({
   email,
@@ -475,5 +493,305 @@ const detailRow = (label, value, isLast = false) => `
     </tr>
   </table>
 `;
+
+export const sendHeartbeatAlert = async ({
+  heartbeatName,
+  email,
+  formateDate,
+  alertType = "down",
+}) => {
+  let subject = `${heartbeatName} is Down`;
+  let title = `${heartbeatName} missed check-in`;
+  let message = `Our monitoring engine failed to receive a heartbeat check-in from your configured instance within the required interval.`;
+  let statusBadgeColor = "#ff4466";
+  let statusBadgeText = "DOWN";
+
+  if (alertType === "recovered") {
+    subject = `${heartbeatName} is Back UP`;
+    title = `${heartbeatName} has checked in`;
+    message = `We received a successful heartbeat ping. Your service is marked back online.`;
+    statusBadgeColor = "#00ff88";
+    statusBadgeText = "OK";
+  }
+
+  const htmlTemplate = getBaseLayout({
+    content: `
+      <div style="padding:32px; border-bottom:4px solid ${statusBadgeColor}; background-color:#111118;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:${statusBadgeColor}; margin-bottom:6px;">
+          HEARTBEAT ALERT
+        </div>
+        <h1 style="margin:0; font-size:26px; font-weight:800; color:#e8e8f0; letter-spacing:-0.02em;">
+          ${title}
+        </h1>
+      </div>
+      <div style="padding:32px;">
+        <p style="margin:0 0 24px 0; color:#8888aa; font-size:14.5px; line-height:1.6;">
+          ${message}
+        </p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0e0e16; border:1px solid #1e1e2e; border-radius:8px; overflow:hidden;">
+          <tr><td>${detailRow("Heartbeat Name", heartbeatName)}</td></tr>
+          <tr><td>${detailRow("Status", `<span style="background-color:rgba(${alertType === "recovered" ? "0,255,136,0.1" : "255,68,102,0.15"}); color:${statusBadgeColor}; border:1px solid ${statusBadgeColor}; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:700; font-family:monospace;">${statusBadgeText}</span>`)}</td></tr>
+          <tr><td>${detailRow("Timestamp", formateDate, true)}</td></tr>
+        </table>
+      </div>
+    `,
+  });
+
+  try {
+    const data = await resend.emails.send({
+      from: `Ping Monitor <${SENDER_EMAIL}>`,
+      to: email,
+      subject,
+      html: htmlTemplate,
+    });
+    console.log("Heartbeat Email sent:", data.id);
+    await logEmailAttempt({ email, subject, status: "sent", monitorId: null });
+    return data;
+  } catch (error) {
+    console.error("Failed to send heartbeat email:", error);
+    await logEmailAttempt({
+      email,
+      subject,
+      status: "failed",
+      errorReason: error.message,
+      monitorId: null,
+    });
+    throw error;
+  }
+};
+
+export const sendSyntheticAlert = async ({
+  syntheticMonitorName,
+  email,
+  formateDate,
+  alertType = "down",
+  errorMsg = "",
+}) => {
+  let subject = `Synthetic Monitor ${syntheticMonitorName} is Down`;
+  let title = `${syntheticMonitorName} failed execution`;
+  let message = `Our automated browser synthetic monitoring check failed to execute the automation script successfully.`;
+  let statusBadgeColor = "#ff4466";
+  let statusBadgeText = "FAILED";
+
+  if (alertType === "recovered") {
+    subject = `Synthetic Monitor ${syntheticMonitorName} is Back UP`;
+    title = `${syntheticMonitorName} execution succeeded`;
+    message = `We executed your browser synthetic script, and it completed successfully with no errors.`;
+    statusBadgeColor = "#00ff88";
+    statusBadgeText = "OK";
+  }
+
+  const htmlTemplate = getBaseLayout({
+    content: `
+      <div style="padding:32px; border-bottom:4px solid ${statusBadgeColor}; background-color:#111118;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:${statusBadgeColor}; margin-bottom:6px;">
+          SYNTHETIC MONITOR ALERT
+        </div>
+        <h1 style="margin:0; font-size:26px; font-weight:800; color:#e8e8f0; letter-spacing:-0.02em;">
+          ${title}
+        </h1>
+      </div>
+      <div style="padding:32px;">
+        <p style="margin:0 0 24px 0; color:#8888aa; font-size:14.5px; line-height:1.6;">
+          ${message}
+        </p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0e0e16; border:1px solid #1e1e2e; border-radius:8px; overflow:hidden;">
+          <tr><td>${detailRow("Monitor Name", syntheticMonitorName)}</td></tr>
+          <tr><td>${detailRow("Status", `<span style="background-color:rgba(${alertType === "recovered" ? "0,255,136,0.1" : "255,68,102,0.15"}); color:${statusBadgeColor}; border:1px solid ${statusBadgeColor}; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:700; font-family:monospace;">${statusBadgeText}</span>`)}</td></tr>
+          ${errorMsg ? `<tr><td>${detailRow("Error Details", `<pre style="margin:0; font-size:11px; white-space:pre-wrap; word-break:break-all; font-family:monospace; color:#ffa8a8;">${errorMsg}</pre>`)}</td></tr>` : ""}
+          <tr><td>${detailRow("Timestamp", formateDate, true)}</td></tr>
+        </table>
+      </div>
+    `,
+  });
+
+  try {
+    const data = await resend.emails.send({
+      from: `Ping Monitor <${SENDER_EMAIL}>`,
+      to: email,
+      subject,
+      html: htmlTemplate,
+    });
+    console.log("Synthetic Email sent:", data.id);
+    await logEmailAttempt({ email, subject, status: "sent", monitorId: null });
+    return data;
+  } catch (error) {
+    console.error("Failed to send synthetic email:", error);
+    await logEmailAttempt({
+      email,
+      subject,
+      status: "failed",
+      errorReason: error.message,
+      monitorId: null,
+    });
+    throw error;
+  }
+};
+
+export const sendApiMonitorAlert = async ({
+  apiMonitorName,
+  email,
+  formateDate,
+  alertType = "down",
+  errorMsg = "",
+}) => {
+  let subject = `API Monitor ${apiMonitorName} is Down`;
+  let title = `${apiMonitorName} assertions failed`;
+  let message = `Our automated API check failed to satisfy one or more assertions configured for the endpoint.`;
+  let statusBadgeColor = "#ff4466";
+  let statusBadgeText = "DOWN";
+
+  if (alertType === "recovered") {
+    subject = `API Monitor ${apiMonitorName} is Back UP`;
+    title = `${apiMonitorName} assertions recovered`;
+    message = `We performed an API check-in, and all assertions resolved successfully.`;
+    statusBadgeColor = "#00ff88";
+    statusBadgeText = "OK";
+  }
+
+  const htmlTemplate = getBaseLayout({
+    content: `
+      <div style="padding:32px; border-bottom:4px solid ${statusBadgeColor}; background-color:#111118;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:${statusBadgeColor}; margin-bottom:6px;">
+          API MONITOR ALERT
+        </div>
+        <h1 style="margin:0; font-size:26px; font-weight:800; color:#e8e8f0; letter-spacing:-0.02em;">
+          ${title}
+        </h1>
+      </div>
+      <div style="padding:32px;">
+        <p style="margin:0 0 24px 0; color:#8888aa; font-size:14.5px; line-height:1.6;">
+          ${message}
+        </p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0e0e16; border:1px solid #1e1e2e; border-radius:8px; overflow:hidden;">
+          <tr><td>${detailRow("Monitor Name", apiMonitorName)}</td></tr>
+          <tr><td>${detailRow("Status", `<span style="background-color:rgba(${alertType === "recovered" ? "0,255,136,0.1" : "255,68,102,0.15"}); color:${statusBadgeColor}; border:1px solid ${statusBadgeColor}; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:700; font-family:monospace;">${statusBadgeText}</span>`)}</td></tr>
+          ${errorMsg ? `<tr><td>${detailRow("Error Details", `<pre style="margin:0; font-size:11px; white-space:pre-wrap; word-break:break-all; font-family:monospace; color:#ffa8a8;">${errorMsg}</pre>`)}</td></tr>` : ""}
+          <tr><td>${detailRow("Timestamp", formateDate, true)}</td></tr>
+        </table>
+      </div>
+    `,
+  });
+
+  try {
+    const data = await resend.emails.send({
+      from: `Ping Monitor <${SENDER_EMAIL}>`,
+      to: email,
+      subject,
+      html: htmlTemplate,
+    });
+    console.log("API Email sent:", data.id);
+    await logEmailAttempt({ email, subject, status: "sent", monitorId: null });
+    return data;
+  } catch (error) {
+    console.error("Failed to send API email:", error);
+    await logEmailAttempt({
+      email,
+      subject,
+      status: "failed",
+      errorReason: error.message,
+      monitorId: null,
+    });
+    throw error;
+  }
+};
+
+export const sendScheduledReportEmail = async ({
+  email,
+  name,
+  frequency,
+  reportData,
+}) => {
+  const subject = `Your ${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Ping Monitor Report`;
+
+  let contentHtml = `
+    <div style="padding:32px; border-bottom:4px solid #6655ff; background-color:#111118;">
+      <h1 style="margin:0; font-size:24px; font-weight:800; color:#e8e8f0; letter-spacing:-0.01em;">
+        ${subject}
+      </h1>
+      <p style="margin-top:8px; color:#8888aa; font-size:14px;">Hello ${name}, here is your scheduled summary report.</p>
+    </div>
+    <div style="padding:32px;">
+  `;
+
+  if (reportData.uptime && reportData.uptime.length > 0) {
+    contentHtml += `<h2 style="color:#e8e8f0; font-size:16px; margin-bottom:12px; border-bottom:1px solid #1e1e2e; padding-bottom:8px;">Uptime Summary</h2>`;
+    contentHtml += `<table width="100%" cellpadding="8" style="color:#8888aa; font-size:14px; margin-bottom:24px; border-collapse:collapse;">
+      <tr style="text-align:left; background-color:#1e1e2e;"><th style="padding:8px; border-radius:4px 0 0 4px;">Monitor</th><th style="padding:8px; border-radius:0 4px 4px 0; text-align:right;">Uptime</th></tr>`;
+    reportData.uptime.forEach((item) => {
+      const color = item.uptimePercent < 99 ? "#ffcc00" : "#00ff88";
+      contentHtml += `<tr>
+        <td style="border-bottom:1px solid #1e1e2e; padding:8px;">${item.name}</td>
+        <td style="border-bottom:1px solid #1e1e2e; padding:8px; text-align:right; color:${color}; font-weight:bold;">${item.uptimePercent}%</td>
+      </tr>`;
+    });
+    contentHtml += `</table>`;
+  }
+
+  if (reportData.responseTime && reportData.responseTime.length > 0) {
+    contentHtml += `<h2 style="color:#e8e8f0; font-size:16px; margin-bottom:12px; border-bottom:1px solid #1e1e2e; padding-bottom:8px;">Avg Response Time</h2>`;
+    contentHtml += `<table width="100%" cellpadding="8" style="color:#8888aa; font-size:14px; margin-bottom:24px; border-collapse:collapse;">
+      <tr style="text-align:left; background-color:#1e1e2e;"><th style="padding:8px; border-radius:4px 0 0 4px;">Monitor</th><th style="padding:8px; border-radius:0 4px 4px 0; text-align:right;">Avg Time</th></tr>`;
+    reportData.responseTime.forEach((item) => {
+      contentHtml += `<tr>
+        <td style="border-bottom:1px solid #1e1e2e; padding:8px;">${item.name}</td>
+        <td style="border-bottom:1px solid #1e1e2e; padding:8px; text-align:right;">${item.avgResponseTime}ms</td>
+      </tr>`;
+    });
+    contentHtml += `</table>`;
+  }
+
+  if (reportData.incidents && reportData.incidents.length > 0) {
+    contentHtml += `<h2 style="color:#e8e8f0; font-size:16px; margin-bottom:12px; border-bottom:1px solid #1e1e2e; padding-bottom:8px;">Recent Incidents</h2>`;
+    contentHtml += `<ul style="color:#8888aa; font-size:14px; margin-bottom:24px; padding-left:20px;">`;
+    reportData.incidents.forEach((item) => {
+      contentHtml += `<li style="margin-bottom:6px;"><strong>${item.title}</strong> - ${item.state} (${new Date(item.date).toLocaleDateString()})</li>`;
+    });
+    contentHtml += `</ul>`;
+  } else if (reportData.incidents) {
+    contentHtml += `<h2 style="color:#e8e8f0; font-size:16px; margin-bottom:12px; border-bottom:1px solid #1e1e2e; padding-bottom:8px;">Recent Incidents</h2>`;
+    contentHtml += `<p style="color:#8888aa; font-size:14px; margin-bottom:24px;">No incidents reported in this period.</p>`;
+  }
+
+  if (reportData.heartbeats && reportData.heartbeats.length > 0) {
+    contentHtml += `<h2 style="color:#e8e8f0; font-size:16px; margin-bottom:12px; border-bottom:1px solid #1e1e2e; padding-bottom:8px;">Heartbeats</h2>`;
+    contentHtml += `<table width="100%" cellpadding="8" style="color:#8888aa; font-size:14px; margin-bottom:24px; border-collapse:collapse;">
+      <tr style="text-align:left; background-color:#1e1e2e;"><th style="padding:8px; border-radius:4px 0 0 4px;">Heartbeat</th><th style="padding:8px; border-radius:0 4px 4px 0; text-align:right;">Status</th></tr>`;
+    reportData.heartbeats.forEach((item) => {
+      const color = item.status === "up" ? "#00ff88" : "#ff4466";
+      contentHtml += `<tr>
+        <td style="border-bottom:1px solid #1e1e2e; padding:8px;">${item.name}</td>
+        <td style="border-bottom:1px solid #1e1e2e; padding:8px; text-align:right; color:${color}; font-weight:bold;">${item.status.toUpperCase()}</td>
+      </tr>`;
+    });
+    contentHtml += `</table>`;
+  }
+
+  contentHtml += `</div>`;
+
+  const htmlTemplate = getBaseLayout({ content: contentHtml });
+
+  try {
+    const data = await resend.emails.send({
+      from: `Ping Monitor <${SENDER_EMAIL}>`,
+      to: email,
+      subject,
+      html: htmlTemplate,
+    });
+    console.log("Scheduled Report Email sent:", data.id);
+    await logEmailAttempt({ email, subject, status: "sent", monitorId: null });
+    return data;
+  } catch (error) {
+    console.error("Failed to send scheduled report email:", error);
+    await logEmailAttempt({
+      email,
+      subject,
+      status: "failed",
+      errorReason: error.message,
+      monitorId: null,
+    });
+    throw error;
+  }
+};
 
 export default sendAlert;

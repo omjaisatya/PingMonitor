@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { hashToken } from "../../utils/tokenCofig.js";
 import { FRONTEND_URL } from "../config/env.config.js";
 import { sendVerificationEmail } from "../services/emailService.js";
+import cloudinary from "../config/cloudinary.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 const VERIFY_TOKEN_TTL = 24 * 60 * 60 * 1000;
@@ -185,7 +186,12 @@ export const deleteAccount = async (req, res) => {
 
 export const updateStatusPageSettings = async (req, res) => {
   try {
-    const { statusPageEnabled, statusPageTitle, statusPageDescription, statusPageSlug } = req.body;
+    const {
+      statusPageEnabled,
+      statusPageTitle,
+      statusPageDescription,
+      statusPageSlug,
+    } = req.body;
 
     const user = await User.findById(req.user._id);
     if (!user) {
@@ -205,12 +211,13 @@ export const updateStatusPageSettings = async (req, res) => {
     if (statusPageSlug !== undefined) {
       const cleanSlug = statusPageSlug.trim().toLowerCase();
       if (cleanSlug === "") {
-        user.statusPageSlug = null;
+        user.statusPageSlug = undefined;
       } else {
         const slugRegex = /^[a-z0-9-_]+$/;
         if (!slugRegex.test(cleanSlug)) {
           return res.status(400).json({
-            message: "Slug can only contain alphanumeric characters, hyphens, and underscores",
+            message:
+              "Slug can only contain alphanumeric characters, hyphens, and underscores",
           });
         }
 
@@ -225,7 +232,9 @@ export const updateStatusPageSettings = async (req, res) => {
           _id: { $ne: user._id },
         });
         if (existing) {
-          return res.status(400).json({ message: "This slug is already taken" });
+          return res
+            .status(400)
+            .json({ message: "This slug is already taken" });
         }
         user.statusPageSlug = cleanSlug;
       }
@@ -246,6 +255,166 @@ export const updateStatusPageSettings = async (req, res) => {
         themePreference: user.themePreference || "dark",
       },
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const uploadAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image file provided" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.avatar && user.avatar.publicId) {
+      try {
+        await cloudinary.uploader.destroy(user.avatar.publicId);
+      } catch (err) {
+        console.error(
+          "Failed to delete old avatar from Cloudinary:",
+          err.message,
+        );
+      }
+    }
+
+    const uploadToCloudinary = (fileBuffer) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "pingmonitor/avatars",
+            resource_type: "image",
+          },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          },
+        );
+        stream.end(fileBuffer);
+      });
+    };
+
+    const result = await uploadToCloudinary(req.file.buffer);
+
+    user.avatar = {
+      url: result.secure_url,
+      publicId: result.public_id,
+    };
+    await user.save();
+
+    res.json({
+      message: "Avatar uploaded successfully",
+      avatar: user.avatar,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteAvatar = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.avatar && user.avatar.publicId) {
+      try {
+        await cloudinary.uploader.destroy(user.avatar.publicId);
+      } catch (err) {
+        console.error("Failed to delete avatar from Cloudinary:", err.message);
+      }
+    }
+
+    user.avatar = {
+      url: null,
+      publicId: null,
+    };
+    await user.save();
+
+    res.json({
+      message: "Avatar deleted successfully",
+      avatar: user.avatar,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+import { generateReportData } from "../services/reportService.js";
+import { sendScheduledReportEmail } from "../services/emailService.js";
+
+export const updateEmailReportSettings = async (req, res) => {
+  try {
+    const { enabled, frequency, deliveryTime, timezone, sections } = req.body;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (!user.emailReportConfig) {
+      user.emailReportConfig = {};
+    }
+
+    if (enabled !== undefined) user.emailReportConfig.enabled = !!enabled;
+    if (frequency) user.emailReportConfig.frequency = frequency;
+    if (deliveryTime) user.emailReportConfig.deliveryTime = deliveryTime;
+    if (timezone) user.emailReportConfig.timezone = timezone;
+    if (sections) {
+      user.emailReportConfig.sections = {
+        ...user.emailReportConfig.sections,
+        ...sections,
+      };
+    }
+
+    await user.save();
+
+    res.json({
+      message: "Scheduled email report settings updated",
+      emailReportConfig: user.emailReportConfig,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const sendTestEmailReport = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const config = user.emailReportConfig || {
+      frequency: "weekly",
+      sections: {
+        uptime: true,
+        incidents: true,
+        responseTime: true,
+        ssl: true,
+        heartbeats: true,
+      },
+    };
+
+    const reportData = await generateReportData(
+      user._id,
+      config.sections,
+      config.frequency,
+    );
+
+    await sendScheduledReportEmail({
+      email: user.email,
+      name: user.name,
+      frequency: config.frequency,
+      reportData,
+    });
+
+    res.json({ message: "Test report sent successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

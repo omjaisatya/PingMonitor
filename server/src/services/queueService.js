@@ -6,6 +6,8 @@ import { REDIS_URL, WORKER_NODE_TOKEN } from "../config/env.config.js";
 const CHECK_QUEUE_NAME = "monitor-checks";
 const RESULT_QUEUE_NAME = "monitor-results";
 const AGGREGATE_QUEUE_NAME = "monitor-aggregate";
+const SYNTHETIC_QUEUE_NAME = "synthetic-checks";
+const API_QUEUE_NAME = "api-checks";
 
 let connection = null;
 let queues = null;
@@ -40,6 +42,8 @@ export const getQueues = () => {
         new Queue(`${CHECK_QUEUE_NAME}-${region}`, { connection: redis }),
       results: new Queue(RESULT_QUEUE_NAME, { connection: redis }),
       aggregate: new Queue(AGGREGATE_QUEUE_NAME, { connection: redis }),
+      synthetic: new Queue(SYNTHETIC_QUEUE_NAME, { connection: redis }),
+      api: new Queue(API_QUEUE_NAME, { connection: redis }),
     };
   }
 
@@ -57,4 +61,6 @@ export const queueNames = {
   checksForRegion: (region) => `${CHECK_QUEUE_NAME}-${region}`,
   results: RESULT_QUEUE_NAME,
   aggregate: AGGREGATE_QUEUE_NAME,
+  synthetic: SYNTHETIC_QUEUE_NAME,
+  api: API_QUEUE_NAME,
 };

@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect, id } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "../context/ToastContext";
 import { useAuth } from "../hook/useAuth";
 import apiClient from "../api/axios";
 import "../styles/UserProfile.css";
 import Navbar from "./Navbar";
+import Avatar from "./Avatar";
 import {
   FiUser,
   FiShield,
@@ -15,6 +16,10 @@ import {
   FiCopy,
   FiCheck,
   FiExternalLink,
+  FiCamera,
+  FiTrash2,
+  FiUpload,
+  FiMail,
 } from "react-icons/fi";
 
 const scorePassword = (password) => {
@@ -166,6 +171,186 @@ const ConfirmModal = ({
         </div>
       </div>
     </div>
+  );
+};
+
+const AvatarSettings = ({ user, onUpdate }) => {
+  const [dragActive, setDragActive] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const validateFile = (file) => {
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Invalid file type. Only JPG, JPEG, PNG, and WEBP are allowed.");
+      return false;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File is too large. Max size is 5MB.");
+      return false;
+    }
+    return true;
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (validateFile(file)) {
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+      }
+    }
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (validateFile(file)) {
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+      }
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("avatar", selectedFile);
+
+    try {
+      const { data } = await apiClient.post("/auth/profile/avatar", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      toast.success("Profile picture updated successfully!");
+      onUpdate({ avatar: data.avatar });
+      handleCancelPreview();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to upload avatar");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCancelPreview = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const { data } = await apiClient.delete("/auth/profile/avatar");
+      toast.success("Profile picture removed successfully!");
+      onUpdate({ avatar: data.avatar });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to remove avatar");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <SectionCard
+      title="Profile Picture"
+      subtitle="Update or remove your account's public avatar image"
+      icon={<FiCamera />}
+    >
+      <div className="avatar-settings-container">
+        <div className="avatar-settings-preview-side">
+          {previewUrl ? (
+            <div className="avatar-wrapper" style={{ width: "80px", height: "80px" }}>
+              <img src={previewUrl} alt="Preview" className="avatar-img" />
+            </div>
+          ) : (
+            <Avatar user={user} size="xl" />
+          )}
+          {user?.avatar?.url && !previewUrl && (
+            <button
+              type="button"
+              className="btn btn-danger btn-sm avatar-delete-btn"
+              onClick={handleDelete}
+              disabled={deleting || uploading}
+            >
+              <FiTrash2 size={13} />
+              <span>{deleting ? "Removing..." : "Remove"}</span>
+            </button>
+          )}
+        </div>
+
+        <div className="avatar-settings-upload-side">
+          {!previewUrl ? (
+            <div
+              className={`upload-zone ${dragActive ? "upload-zone--active" : ""}`}
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              onClick={() => document.getElementById("avatar-file-input").click()}
+            >
+              <input
+                id="avatar-file-input"
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
+              <FiUpload className="upload-zone__icon" size={24} />
+              <p className="upload-zone__text">
+                Drag & drop your picture here, or <strong>browse files</strong>
+              </p>
+              <span className="upload-zone__subtext">
+                Supports JPG, JPEG, PNG, WEBP up to 5MB
+              </span>
+            </div>
+          ) : (
+            <div className="preview-actions-container">
+              <p className="preview-actions-text">
+                Would you like to save this image as your profile picture?
+              </p>
+              <div className="preview-actions-buttons">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleUpload}
+                  disabled={uploading}
+                >
+                  {uploading ? "Saving..." : "Save changes"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={handleCancelPreview}
+                  disabled={uploading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </SectionCard>
   );
 };
 
@@ -834,10 +1019,189 @@ const StatusPageSettings = ({ user, onUpdate }) => {
   );
 };
 
+const EmailReportSettings = ({ user, onUpdate }) => {
+  const defaultTimezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
+  
+  const [enabled, setEnabled] = useState(user?.emailReportConfig?.enabled ?? false);
+  const [frequency, setFrequency] = useState(user?.emailReportConfig?.frequency || "weekly");
+  const [deliveryTime, setDeliveryTime] = useState(user?.emailReportConfig?.deliveryTime || "09:00");
+  const [timezone, setTimezone] = useState(user?.emailReportConfig?.timezone || defaultTimezone);
+  const [sections, setSections] = useState(user?.emailReportConfig?.sections || {
+    uptime: true,
+    incidents: true,
+    responseTime: true,
+    ssl: true,
+    heartbeats: true,
+  });
+  
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const { data } = await apiClient.patch("/auth/profile/email-reports", {
+        enabled,
+        frequency,
+        deliveryTime,
+        timezone,
+        sections,
+      });
+      toast.success("Email report settings updated!");
+      onUpdate({ emailReportConfig: data.emailReportConfig });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTestReport = async () => {
+    setTesting(true);
+    try {
+      await apiClient.post("/auth/profile/email-reports/test");
+      toast.success("Test report email has been sent!");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to send test report");
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const timezones = [
+    "UTC",
+    "America/New_York",
+    "America/Los_Angeles",
+    "America/Chicago",
+    "Europe/London",
+    "Europe/Berlin",
+    "Asia/Tokyo",
+    "Asia/Calcutta",
+    "Australia/Sydney",
+  ];
+
+  if (!timezones.includes(defaultTimezone) && defaultTimezone !== "UTC") {
+    timezones.push(defaultTimezone);
+  }
+
+  return (
+    <SectionCard
+      title="Scheduled Email Reports"
+      subtitle="Receive periodic summaries of your monitors and incidents directly in your inbox"
+      icon={<FiMail />}
+    >
+      <form onSubmit={handleSave} className="form-layout">
+        <div className="toggle-control">
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={enabled}
+              onChange={(e) => setEnabled(e.target.checked)}
+            />
+            <span className={`slider round ${enabled ? "active" : ""}`}>
+              <span className={`slider-thumb ${enabled ? "active" : ""}`} />
+            </span>
+          </label>
+          <span className="toggle-label">
+            {enabled ? "Scheduled Reports Enabled" : "Scheduled Reports Disabled"}
+          </span>
+        </div>
+
+        {enabled && (
+          <>
+            <Field label="Frequency" id="reportFreq">
+              <select
+                id="reportFreq"
+                className="profile-input"
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value)}
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </Field>
+
+            <div className="time-tz-row" style={{ display: "flex", gap: "16px" }}>
+              <div style={{ flex: 1 }}>
+                <Field label="Delivery Time" id="deliveryTime">
+                  <input
+                    type="time"
+                    id="deliveryTime"
+                    className="profile-input"
+                    value={deliveryTime}
+                    onChange={(e) => setDeliveryTime(e.target.value)}
+                    required
+                  />
+                </Field>
+              </div>
+              <div style={{ flex: 1 }}>
+                <Field label="Timezone" id="reportTz">
+                  <select
+                    id="reportTz"
+                    className="profile-input"
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                  >
+                    {timezones.map((tz) => (
+                      <option key={tz} value={tz}>
+                        {tz}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </div>
+
+            <div className="report-sections">
+              <p className="profile-field__label" style={{ marginBottom: "8px", display: "block" }}>Include Sections</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                {Object.entries({
+                  uptime: "Uptime Summary",
+                  incidents: "Recent Incidents",
+                  responseTime: "Average Response Time",
+                  ssl: "SSL Status",
+                  heartbeats: "Heartbeats Status"
+                }).map(([key, label]) => (
+                  <label key={key} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "#e8e8f0", fontSize: "14px" }}>
+                    <input
+                      type="checkbox"
+                      checked={sections[key]}
+                      onChange={(e) => setSections({ ...sections, [key]: e.target.checked })}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="action-row" style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+          <button className="btn btn-primary" type="submit" disabled={saving}>
+            {saving ? "Saving..." : "Save Settings"}
+          </button>
+          
+          <button 
+            type="button" 
+            className="btn btn-ghost" 
+            onClick={handleTestReport}
+            disabled={testing}
+          >
+            {testing ? "Sending..." : "Send Test Report"}
+          </button>
+        </div>
+      </form>
+    </SectionCard>
+  );
+};
+
 const TABS = [
   { id: "profile", label: "Profile", icon: FiUser },
   { id: "security", label: "Security", icon: FiShield },
   { id: "statuspage", label: "Status Page", icon: FiActivity },
+  { id: "reports", label: "Reports", icon: FiMail },
   { id: "account", label: "Account", icon: FiSliders },
 ];
 
@@ -855,9 +1219,7 @@ export default function UserProfile() {
       <div className="profile-page">
         <div className="profile-page__inner">
           <div className="profile-header">
-            <div className="profile-avatar">
-              {(user?.name || user?.email || "?")[0].toUpperCase()}
-            </div>
+            <Avatar user={user} size="xl" className="profile-header-avatar" />
             <div>
               <h1 className="profile-header__name">
                 {user?.name || "Your Account"}
@@ -887,6 +1249,7 @@ export default function UserProfile() {
           <div className="profile-content">
             {activeTab === "profile" && (
               <>
+                <AvatarSettings user={user} onUpdate={handleUserUpdate} />
                 <ProfileInfo user={user} />
                 <ChangeName user={user} onUpdate={handleUserUpdate} />
               </>
@@ -903,6 +1266,9 @@ export default function UserProfile() {
             )}
             {activeTab === "statuspage" && (
               <StatusPageSettings user={user} onUpdate={handleUserUpdate} />
+            )}
+            {activeTab === "reports" && (
+              <EmailReportSettings user={user} onUpdate={handleUserUpdate} />
             )}
             {activeTab === "account" && (
               <>

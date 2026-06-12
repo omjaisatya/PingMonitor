@@ -157,7 +157,7 @@ export default function PublicStatusPage() {
     );
   }
 
-  const { title, description, systemStatus, monitors, incidents = [] } = data;
+  const { title, description, systemStatus, monitors, incidents = [], maintenanceWindows = [] } = data;
 
   const renderStatusBanner = () => {
     const bannerConfig = {
@@ -273,6 +273,28 @@ export default function PublicStatusPage() {
       )}
 
       {renderStatusBanner()}
+
+      {!isEmbed && maintenanceWindows.length > 0 && (
+        <div className="status-card" style={{ padding: "16px", marginBottom: "24px", border: "1px solid rgba(59, 130, 246, 0.3)" }}>
+          <h2 className="status-card__header" style={{ color: "#3b82f6", display: "flex", alignItems: "center", gap: "8px", borderBottom: "none", paddingBottom: 0, marginBottom: "12px" }}>
+            <FiActivity /> Scheduled Maintenance
+          </h2>
+          {maintenanceWindows.map((win) => (
+            <div key={win._id} style={{ marginBottom: "12px", background: "rgba(255, 255, 255, 0.03)", padding: "12px", borderRadius: "8px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                <strong style={{ fontSize: "16px" }}>{win.title}</strong>
+                <span className={`status-incident-row__badge ${win.status === "active" ? "investigating" : "resolved"}`}>
+                  {win.status.toUpperCase()}
+                </span>
+              </div>
+              <p style={{ margin: "0 0 8px 0", color: "var(--text-muted)", fontSize: "14px" }}>{win.description}</p>
+              <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+                {new Date(win.startTime).toLocaleString()} - {new Date(win.endTime).toLocaleString()} ({win.timezone})
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="status-card">
         {!isEmbed && <h2 className="status-card__header">Services Status</h2>}

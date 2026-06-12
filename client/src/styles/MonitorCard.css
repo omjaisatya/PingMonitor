@@ -2,43 +2,33 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  transition: all 0.2s ease;
+  transition: all var(--transition);
   position: relative;
   overflow: hidden;
-  margin-top: 10px;
-}
-
-.monitor-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--border-accent);
-  transition: background 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .monitor-card:hover {
   border-color: var(--border-light);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
   box-shadow: var(--shadow-card);
 }
 
-.monitor-card:hover::before {
-  background: var(--accent);
-}
-
+/* Pause and Down state borders */
 .monitor-card--down {
   border-color: var(--red-border);
 }
 
-.monitor-card--down::before {
-  background: var(--red);
+.monitor-card--down:hover {
+  border-color: var(--red);
+}
+
+.monitor-card--paused {
+  opacity: 0.8;
 }
 
 .monitor-card-header {
@@ -47,21 +37,95 @@
   justify-content: space-between;
 }
 
+.monitor-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  transition: all var(--transition);
+}
+
+.monitor-card:hover .card-icon-wrapper {
+  border-color: var(--border-light);
+  background: var(--bg-card-hover);
+}
+
+.monitor-card-icon {
+  font-size: 14px;
+}
+
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.text-yellow { color: var(--yellow); }
+
+.monitor-status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.monitor-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+}
+
+.monitor-status-dot.up.active {
+  background-color: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse-green-glow 2s infinite;
+}
+
+.monitor-status-dot.down.active {
+  background-color: var(--red);
+  box-shadow: 0 0 8px var(--red);
+}
+
+.monitor-status-dot.unknown.active {
+  background-color: var(--yellow);
+  box-shadow: 0 0 8px var(--yellow);
+}
+
+.monitor-status-dot.paused {
+  background-color: var(--text-muted);
+}
+
+.monitor-status-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
 .monitor-interval {
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   color: var(--text-muted);
 }
 
 .monitor-card-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
 }
 
 .monitor-name {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
   white-space: nowrap;
@@ -80,12 +144,29 @@
 .monitor-actions {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
   border-top: 1px solid var(--border);
-  padding-top: 12px;
+  padding-top: 16px;
+  margin-top: 4px;
 }
 
 .monitor-card-footer {
   display: flex;
-  justify-content: end;
+  justify-content: flex-end;
+  margin-top: -8px;
+}
+
+.monitor-logs-link {
+  color: var(--accent) !important;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition);
+}
+
+.monitor-logs-link:hover {
+  color: var(--text-primary) !important;
+  text-shadow: var(--shadow-glow-accent);
 }
