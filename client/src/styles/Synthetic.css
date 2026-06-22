@@ -321,7 +321,7 @@
 }
 
 .btn-secondary {
-  background: transparent;
+  background: #222235;
   color: #ffffff;
   border: 1px solid #222235;
   border-radius: 8px;
@@ -334,6 +334,7 @@
 
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.05);
+  color: #000;
 }
 
 .status-badge {
