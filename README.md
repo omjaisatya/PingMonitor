@@ -112,15 +112,24 @@ Ensure you have [Docker](https://www.docker.com/) installed and running on your 
 
 ## Demo Environment
 
+### Live Demo
+
+You can check out the live hosted application at: **[pingmonitor-demo.netlify.app](https://pingmonitor-demo.netlify.app/)**
+
+- **Email:** `demo@example.com`
+- **Password:** `demo1234`
+
 PingMonitor supports a dedicated **Demo Mode** (`IS_DEMO_MODE=true`) which transforms the application into an evaluation environment.
 
 ### Features of Demo Mode
+
 - **Auto-Provisioning**: A `demo@example.com` account is automatically seeded with sample REST API monitors, Browser Synthetics, Heartbeats, and incident logs.
 - **Daily Reset**: Every night at midnight (00:00 server time), all demo data is automatically purged and recreated to maintain a clean testing slate.
 - **Email Bypass**: In Demo Mode, actual email dispatches via Resend are intercepted and bypassed for the `demo@example.com` account to prevent quota exhaustion and spamming.
 - **UI Integration**: The login screen features a "Use Demo Account" shortcut to bypass credential typing, and a persistent "DEMO" badge appears in the application's top navigation bar.
 
 ### Running in Demo Mode
+
 To activate Demo Mode locally, simply append the variable to your backend configuration (`server/.env`):
 
 ```env
