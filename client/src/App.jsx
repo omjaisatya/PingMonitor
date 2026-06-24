@@ -1,17 +1,29 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import MonitorDetail from "./pages/MonitorDetail";
-import Analytics from "./pages/Analytics";
-import Incidents from "./pages/Incidents";
-import PublicStatusPage from "./pages/PublicStatusPage";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { useAuth } from "./hook/useAuth";
 import { AuthProvider } from "./context/AuthProvider";
 import AppName from "./AppName";
 import { ToastProvider } from "./context/ToastContext";
-import UserProfile from "./components/UserProfile";
 import { useSessionSecurity } from "./hook/useSessionSecurity";
+
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const MonitorDetail = lazy(() => import("./pages/MonitorDetail"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const Incidents = lazy(() => import("./pages/Incidents"));
+const Heartbeats = lazy(() => import("./pages/Heartbeats"));
+const HeartbeatDetail = lazy(() => import("./pages/HeartbeatDetail"));
+const SyntheticMonitors = lazy(() => import("./pages/SyntheticMonitors"));
+const SyntheticDetail = lazy(() => import("./pages/SyntheticDetail"));
+const ApiMonitors = lazy(() => import("./pages/ApiMonitors"));
+const ApiDetail = lazy(() => import("./pages/ApiDetail"));
+const Maintenance = lazy(() => import("./pages/Maintenance"));
+const PublicStatusPage = lazy(() => import("./pages/PublicStatusPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const UserProfile = lazy(() => import("./components/UserProfile"));
 
 // todo: implement toastify external package for better error handling accross all page and component
 // todo: implement user profile page section where user can change their password or email.
@@ -70,6 +82,22 @@ const AuthLoading = () => (
     >
       Restoring session...
     </p>
+  </div>
+);
+
+const PageLoader = () => (
+  <div
+    style={{
+      minHeight: "60vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "column",
+      gap: "16px",
+      background: "transparent",
+    }}
+  >
+    <span className="spinner spinner-lg" />
   </div>
 );
 
@@ -161,21 +189,88 @@ const ApplicationRouter = () => (
       }
     />
 
+    <Route
+      path="/heartbeats"
+      element={
+        <RequireAuth>
+          <Heartbeats />
+        </RequireAuth>
+      }
+    />
+
+    <Route
+      path="/heartbeats/:id"
+      element={
+        <RequireAuth>
+          <HeartbeatDetail />
+        </RequireAuth>
+      }
+    />
+
+    <Route
+      path="/synthetic"
+      element={
+        <RequireAuth>
+          <SyntheticMonitors />
+        </RequireAuth>
+      }
+    />
+
+    <Route
+      path="/synthetic/:id"
+      element={
+        <RequireAuth>
+          <SyntheticDetail />
+        </RequireAuth>
+      }
+    />
+
+    <Route
+      path="/api-monitors"
+      element={
+        <RequireAuth>
+          <ApiMonitors />
+        </RequireAuth>
+      }
+    />
+
+    <Route
+      path="/api-monitors/:id"
+      element={
+        <RequireAuth>
+          <ApiDetail />
+        </RequireAuth>
+      }
+    />
+
+    <Route
+      path="/maintenance"
+      element={
+        <RequireAuth>
+          <Maintenance />
+        </RequireAuth>
+      }
+    />
+
     <Route path="/status/:slugOrUserId" element={<PublicStatusPage />} />
 
-    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    <Route path="*" element={<NotFound />} />
   </Routes>
 );
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <BrowserRouter>
-          <SecurityLayer />
-          <ApplicationRouter />
-        </BrowserRouter>
-      </ToastProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <BrowserRouter>
+            <SecurityLayer />
+            <Suspense fallback={<PageLoader />}>
+              <ApplicationRouter />
+            </Suspense>
+          </BrowserRouter>
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

@@ -36,7 +36,39 @@ connectDb().then(() => {
   const { MONITOR_NODE_REGION, WORKER_NODE_TOKEN } = process.env;
   if (MONITOR_NODE_REGION && WORKER_NODE_TOKEN) {
     import("./src/workers/regionalWorker.js")
-      .then(() => console.log("Integrated regional worker successfully started."))
-      .catch((err) => console.error("Failed to start integrated regional worker:", err.message));
+      .then(() =>
+        console.log("Integrated regional worker successfully started."),
+      )
+      .catch((err) =>
+        console.error(
+          "Failed to start integrated regional worker:",
+          err.message,
+        ),
+      );
   }
+
+  import("./src/services/queueService.js").then(({ isRedisQueueEnabled }) => {
+    if (isRedisQueueEnabled()) {
+      import("./src/workers/syntheticWorker.js")
+        .then(() =>
+          console.log("Integrated synthetic worker successfully started."),
+        )
+        .catch((err) =>
+          console.error(
+            "Failed to start integrated synthetic worker:",
+            err.message,
+          ),
+        );
+      import("./src/workers/apiWorker.js")
+        .then(() =>
+          console.log("Integrated API checks worker successfully started."),
+        )
+        .catch((err) =>
+          console.error(
+            "Failed to start integrated API checks worker:",
+            err.message,
+          ),
+        );
+    }
+  });
 });

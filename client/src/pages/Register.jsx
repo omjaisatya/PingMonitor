@@ -6,6 +6,7 @@ import "../styles/LoginRegis.css";
 import AppName from "../AppName";
 import logo from "../assets/logo.png";
 import { toast } from "../context/ToastContext";
+import AuthShowcase from "../components/AuthShowcase";
 
 const getApiMessage = (err, fallback) => {
   const validationErrors = err.response?.data?.error;
@@ -95,114 +96,122 @@ export default function Register() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-brand">
-        <img src={logo} alt="app-logo" className="brand-logo" />
-        <span className="auth-brand-name">{AppName}</span>
-      </div>
+    <div className="auth-container">
+      {/* Left Side: Product Showcase */}
+      <AuthShowcase />
 
-      <div className="auth-card">
-        <div className="auth-header">
-          <h1 className="auth-title">Create account</h1>
-          <p className="auth-subtitle">start monitoring your services</p>
+      {/* Right Side: Authentication Area */}
+      <div className="auth-panel">
+        <div className="auth-panel-content">
+          <div className="auth-brand">
+            <img src={logo} alt="app-logo" className="brand-logo" />
+            <span className="auth-brand-name">{AppName}</span>
+          </div>
+
+          <div className="auth-header">
+            <h1 className="auth-title">Create account</h1>
+            <p className="auth-subtitle">Start monitoring your services with ease</p>
+          </div>
+
+
+
+          <form className="auth-form" onSubmit={handleRegister}>
+            <div className="form-group">
+              <label className="form-label" htmlFor="name">Name</label>
+              <input
+                className="form-input"
+                id="name"
+                type="text"
+                name="name"
+                placeholder="John Doe"
+                value={formData.name}
+                onChange={handleInputUpdate}
+                autoComplete="name"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="email">Email address</label>
+              <input
+                className="form-input"
+                id="email"
+                type="email"
+                name="email"
+                placeholder="you@example.com"
+                value={formData.email}
+                onChange={handleInputUpdate}
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="password">Password</label>
+              <div className="password-field">
+                <input
+                  className="form-input"
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  placeholder="Min. 6 characters"
+                  value={formData.password}
+                  onChange={handleInputUpdate}
+                  autoComplete="new-password"
+                />
+                <button
+                  className="password-toggle"
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="confirmPassword">Confirm Password</label>
+              <div className="password-field">
+                <input
+                  className="form-input"
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  name="confirmPassword"
+                  placeholder="Confirm password"
+                  value={formData.confirmPassword}
+                  onChange={handleInputUpdate}
+                  autoComplete="new-password"
+                />
+                <button
+                  className="password-toggle"
+                  type="button"
+                  onClick={() => setShowConfirmPassword((value) => !value)}
+                >
+                  {showConfirmPassword ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary btn-full"
+              disabled={isRegistering}
+            >
+              {isRegistering ? (
+                <>
+                  <span className="spinner" /> Creating account...
+                </>
+              ) : (
+                "Create Account"
+              )}
+            </button>
+          </form>
+
+          <p className="auth-switch">
+            Already have an account?{" "}
+            <Link to="/login" className="auth-link">
+              Sign in
+            </Link>
+          </p>
         </div>
-
-        <form className="auth-form" onSubmit={handleRegister}>
-          <div className="form-group">
-            <label className="form-label">Name</label>
-            <input
-              className="form-input"
-              type="text"
-              name="name"
-              placeholder="John Doe"
-              value={formData.name}
-              onChange={handleInputUpdate}
-              autoComplete="name"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Email</label>
-            <input
-              className="form-input"
-              type="email"
-              name="email"
-              placeholder="you@example.com"
-              value={formData.email}
-              onChange={handleInputUpdate}
-              autoComplete="email"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <div className="password-field">
-              <input
-                className="form-input"
-                type={showPassword ? "text" : "password"}
-                name="password"
-                placeholder="min. 6 characters"
-                value={formData.password}
-                onChange={handleInputUpdate}
-                autoComplete="new-password"
-              />
-              <button
-                className="password-toggle"
-                type="button"
-                onClick={() => setShowPassword((value) => !value)}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Confirm Password</label>
-            <div className="password-field">
-              <input
-                className="form-input"
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirmPassword"
-                placeholder="Confirm password"
-                value={formData.confirmPassword}
-                onChange={handleInputUpdate}
-                autoComplete="new-password"
-              />
-              <button
-                className="password-toggle"
-                type="button"
-                onClick={() => setShowConfirmPassword((value) => !value)}
-              >
-                {showConfirmPassword ? "Hide" : "Show"}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary btn-full"
-            disabled={isRegistering}
-          >
-            {isRegistering ? (
-              <>
-                <span className="spinner" /> Creating account...
-              </>
-            ) : (
-              "Create Account →"
-            )}
-          </button>
-        </form>
-
-        <p className="auth-switch">
-          Already have an account?{" "}
-          <Link to="/login" className="auth-link">
-            Sign in
-          </Link>
-        </p>
-      </div>
-
-      <div className="auth-bg-text" aria-hidden>
-        {AppName}
       </div>
     </div>
   );

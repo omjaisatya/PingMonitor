@@ -66,72 +66,80 @@ const getHeatCellClass = (point) => {
   return "region-heat-cell region-heat-cell--slow";
 };
 
-const RegionalLatencyPanel = ({ regions = [], quorum }) => (
-  <section className="regional-panel">
-    <div className="regional-panel__header">
-      <div>
-        <h2 className="section-title regional-panel__title">
-          <FiMapPin size={16} /> Regional Latency
-        </h2>
-        <p className="page-subtitle">
-          Majority quorum: {quorum?.failedRegions ?? 0}/
-          {quorum?.totalRegions || regions.length || 4} regions failing
-        </p>
+const RegionalLatencyPanel = ({ regions = [], quorum }) => {
+  const hasQuorum = quorum?.passed !== null && quorum?.passed !== undefined;
+
+  return (
+    <section className="regional-panel">
+      <div className="regional-panel__header">
+        <div>
+          <h2 className="section-title regional-panel__title">
+            <FiMapPin size={16} /> Regional Latency
+          </h2>
+          <p className="page-subtitle">
+            Majority quorum: {quorum?.failedRegions ?? 0}/
+            {quorum?.totalRegions || regions.length || 4} regions failing
+          </p>
+        </div>
+        <span
+          className={`badge ${quorum?.passed === false ? "badge-down" : hasQuorum ? "badge-up" : "badge-unknown"}`}
+        >
+          {quorum?.passed === false
+            ? "regional outage"
+            : hasQuorum
+              ? "quorum healthy"
+              : "waiting for quorum"}
+        </span>
       </div>
-      <span
-        className={`badge ${quorum?.passed === false ? "badge-down" : "badge-up"}`}
-      >
-        {quorum?.passed === false ? "regional outage" : "quorum healthy"}
-      </span>
-    </div>
 
-    <div className="regional-grid">
-      {regions.map((region) => (
-        <article key={region.region} className="regional-card">
-          <div className="regional-card__top">
-            <div>
-              <div className="regional-card__name">
-                {REGION_LABELS[region.region] || region.region}
+      <div className="regional-grid">
+        {regions.map((region) => (
+          <article key={region.region} className="regional-card">
+            <div className="regional-card__top">
+              <div>
+                <div className="regional-card__name">
+                  {REGION_LABELS[region.region] || region.region}
+                </div>
+                <div className="regional-card__meta">
+                  {region.averageLatency24h !== null
+                    ? `${region.averageLatency24h}ms avg`
+                    : "No latency yet"}
+                </div>
               </div>
-              <div className="regional-card__meta">
-                {region.averageLatency24h !== null
-                  ? `${region.averageLatency24h}ms avg`
-                  : "No latency yet"}
-              </div>
+              <span
+                className={`badge badge-${region.latest?.status || "unknown"}`}
+              >
+                {region.latest?.status || "unknown"}
+              </span>
             </div>
-            <span
-              className={`badge badge-${region.latest?.status || "unknown"}`}
-            >
-              {region.latest?.status || "unknown"}
-            </span>
-          </div>
 
-          <div className="regional-card__stats">
-            <span>{region.failures24h} failures</span>
-            <span>{region.checks24h} checks</span>
-          </div>
+            <div className="regional-card__stats">
+              <span>{region.failures24h} failures</span>
+              <span>{region.checks24h} checks</span>
+            </div>
 
-          <div className="region-heatmap" aria-label={`${region.region} latency heatmap`}>
-            {Array.from({ length: 24 }).map((_, index) => {
-              const point = region.heatmap?.[index];
-              return (
-                <span
-                  key={`${region.region}-${index}`}
-                  className={getHeatCellClass(point)}
-                  title={
-                    point
-                      ? `${formatResponseTime(point.responseTime)} • ${point.status}`
-                      : "No check"
-                  }
-                />
-              );
-            })}
-          </div>
-        </article>
-      ))}
-    </div>
-  </section>
-);
+            <div className="region-heatmap" aria-label={`${region.region} latency heatmap`}>
+              {Array.from({ length: 24 }).map((_, index) => {
+                const point = region.heatmap?.[index];
+                return (
+                  <span
+                    key={`${region.region}-${index}`}
+                    className={getHeatCellClass(point)}
+                    title={
+                      point
+                        ? `${formatResponseTime(point.responseTime)} • ${point.status}`
+                        : "No check"
+                    }
+                  />
+                );
+              })}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+};
 
 export default function MonitorDetails() {
   const { id } = useParams();
@@ -317,7 +325,7 @@ export default function MonitorDetails() {
           <div className="detail-header-left">
             <div className="detail-title-row">
               <h1 className="page-title">{monitor.name}</h1>
-              <span className={`badge badge-${monitor.status}`}>
+              <span className={`badge badge-${monitor.status}`} style={{ alignSelf: "center", transform: "translateY(2px)" }}>
                 {monitor.status}
               </span>
             </div>

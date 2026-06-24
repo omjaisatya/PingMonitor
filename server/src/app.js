@@ -1,6 +1,7 @@
 import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import { swaggerUi, swaggerSpec } from "./config/swagger.js";
 import routerAuth from "./routes/authRoutes.js";
 import routerMon from "./routes/monitorRoutes.js";
 import routerProfile from "./routes/profileRoutes.js";
@@ -8,6 +9,11 @@ import routerAnalytics from "./routes/analyticsRoutes.js";
 import routerNotification from "./routes/notificationRoutes.js";
 import routerPublic from "./routes/publicRoutes.js";
 import routerIncidents from "./routes/incidentRoutes.js";
+import routerHeartbeat from "./routes/heartbeatRoutes.js";
+import routerSynthetic from "./routes/syntheticRoutes.js";
+import routerApi from "./routes/apiRoutes.js";
+import routerConfig from "./routes/configRoutes.js";
+import routerMaintenance from "./routes/maintenanceRoutes.js";
 import cors from "cors";
 import { FRONTEND_URL } from "./config/env.config.js";
 import health from "./routes/healthRoute.js";
@@ -26,30 +32,49 @@ const app = express();
 
 app.set("trust proxy", 1);
 
+app.use((req, res, next) => {
+  const start = performance.now();
+  res.on("finish", () => {
+    const duration = (performance.now() - start).toFixed(2);
+    console.log(
+      `[API Log] ${req.method} ${req.originalUrl} - ${res.statusCode} (${duration}ms)`,
+    );
+  });
+  next();
+});
+
 let corsOptions = {
   origin: FRONTEND_URL,
   credentials: true,
 };
 
-// helment security middleware
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  }),
-);
-app.use(
-  helmet.contentSecurityPolicy({
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:"],
-      connectSrc: ["'self'", FRONTEND_URL],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"],
-    },
-  }),
-);
+// helmet security middleware
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api-docs")) {
+    next();
+  } else {
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })(req, res, next);
+  }
+});
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api-docs")) {
+    next();
+  } else {
+    helmet.contentSecurityPolicy({
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:"],
+        connectSrc: ["'self'", FRONTEND_URL],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+      },
+    })(req, res, next);
+  }
+});
 
 // middleware
 app.use(cors(corsOptions));
@@ -58,6 +83,9 @@ app.use(cookieParser());
 
 // apihealth check
 app.use("/api", health);
+
+// Swagger Documentation Route
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // main home url
 app.get("/", (req, res) => {
@@ -72,6 +100,13 @@ app.use("/api/monitors", routerMon);
 app.use("/api/analytics", routerAnalytics);
 app.use("/api/notifications", routerNotification);
 app.use("/api/incidents", routerIncidents);
+app.use("/api/heartbeats", routerHeartbeat);
+app.use("/api/synthetic-monitors", routerSynthetic);
+app.use("/api/api-monitors", routerApi);
+app.use("/api/maintenance", routerMaintenance);
+app.use("/api/config", routerConfig);
+
+app.use("/uploads", express.static("uploads"));
 
 // move error and global error handling in middleware
 app.use((req, res, next) => {

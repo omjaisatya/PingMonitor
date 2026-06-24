@@ -39,14 +39,44 @@ const userSchema = new Schema(
     // status page settings
     statusPageEnabled: { type: Boolean, default: true },
     statusPageTitle: { type: String, default: "System Status" },
-    statusPageDescription: { type: String, default: "Live status of our services." },
-    statusPageSlug: { type: String, unique: true, sparse: true, default: null },
+    statusPageDescription: {
+      type: String,
+      default: "Live status of our services.",
+    },
+    statusPageSlug: { type: String, unique: true, sparse: true },
 
-    // user preferences
     themePreference: {
       type: String,
       enum: ["dark", "light"],
       default: "dark",
+    },
+    avatar: {
+      url: {
+        type: String,
+        default: null,
+      },
+      publicId: {
+        type: String,
+        default: null,
+      },
+    },
+    emailReportConfig: {
+      enabled: { type: Boolean, default: false },
+      frequency: {
+        type: String,
+        enum: ["daily", "weekly", "monthly"],
+        default: "weekly",
+      },
+      deliveryTime: { type: String, default: "09:00" }, // HH:mm format
+      timezone: { type: String, default: "UTC" },
+      sections: {
+        uptime: { type: Boolean, default: true },
+        incidents: { type: Boolean, default: true },
+        responseTime: { type: Boolean, default: true },
+        ssl: { type: Boolean, default: true },
+        heartbeats: { type: Boolean, default: true },
+      },
+      lastReportSentAt: { type: Date, default: null },
     },
   },
   { timestamps: true },

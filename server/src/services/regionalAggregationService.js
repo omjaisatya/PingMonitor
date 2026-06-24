@@ -2,7 +2,12 @@ import crypto from "crypto";
 import Log from "../models/Log.js";
 import Monitor from "../models/Monitor.js";
 import RegionalCheckResult from "../models/RegionalCheckResult.js";
-import { getMajorityThreshold, getMonitorRegions } from "../config/regions.js";
+import {
+  DEFAULT_MONITOR_REGIONS,
+  getMajorityThreshold,
+  getMonitorRegions,
+} from "../config/regions.js";
+import { MONITOR_NODE_REGION } from "../config/env.config.js";
 import {
   calculateDowntime,
   dispatchNotifications,
@@ -230,9 +235,33 @@ export const getRegionalBreakdown = async (monitorId) => {
   const regions = getMonitorRegions();
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const recentResults = await RegionalCheckResult.find({ monitorId })
+  let recentResults = await RegionalCheckResult.find({ monitorId })
     .sort({ checkedAt: -1 })
     .limit(regions.length * 60);
+
+  if (recentResults.length === 0) {
+    const fallbackRegion = DEFAULT_MONITOR_REGIONS.includes(
+      (MONITOR_NODE_REGION || "").toLowerCase(),
+    )
+      ? MONITOR_NODE_REGION.toLowerCase()
+      : regions[0];
+
+    const localLogs = await Log.find({
+      monitorId,
+      region: { $in: ["central", "quorum"] },
+    })
+      .sort({ timestamp: -1 })
+      .limit(60);
+
+    recentResults = localLogs.map((log) => ({
+      region: fallbackRegion,
+      status: log.status,
+      responseTime: log.responseTime,
+      statusCode: log.statusCode,
+      checkedAt: log.timestamp,
+      error: "",
+    }));
+  }
 
   return regions.map((region) => {
     const regionResults = recentResults.filter(

@@ -1,4 +1,3 @@
-# Stage 1: Build client
 FROM node:20-alpine AS build
 
 WORKDIR /app

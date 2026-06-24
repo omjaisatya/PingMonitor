@@ -3,6 +3,10 @@ import User from "../models/User.js";
 import Monitor from "../models/Monitor.js";
 import Log from "../models/Log.js";
 import Incident from "../models/Incident.js";
+import Heartbeat from "../models/Heartbeat.js";
+import HeartbeatLog from "../models/HeartbeatLog.js";
+import MaintenanceWindow from "../models/MaintenanceWindow.js";
+import { dispatchHeartbeatNotifications } from "../services/heartbeatNotificationService.js";
 
 const generateSvgBadge = (label, statusText, statusColor) => {
   const labelClean = label
@@ -95,6 +99,11 @@ export const getPublicStatus = async (req, res) => {
         "title summary severity state affectedServices timeline rootCauseAnalysis startedAt resolvedAt updatedAt",
       );
 
+    const maintenanceWindows = await MaintenanceWindow.find({
+      userId: user._id,
+      status: { $in: ["scheduled", "active"] },
+    }).select("title description startTime endTime status timezone");
+
     let systemStatus = "all_operational";
     if (monitors.length === 0) {
       systemStatus = "unknown";
@@ -113,6 +122,7 @@ export const getPublicStatus = async (req, res) => {
       systemStatus,
       monitors: monitorsWithLogs,
       incidents: publicIncidents,
+      maintenanceWindows,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -196,5 +206,77 @@ export const getUserBadge = async (req, res) => {
   } catch (error) {
     const svg = generateSvgBadge("status", "error", "#ef4444");
     res.send(svg);
+  }
+};
+
+const getIntervalMinutes = (interval) => {
+  switch (interval) {
+    case "1min":
+      return 1;
+    case "5min":
+      return 5;
+    case "15min":
+      return 15;
+    case "hourly":
+      return 60;
+    case "daily":
+      return 1440;
+    default:
+      return 5;
+  }
+};
+
+export const pingHeartbeat = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const heartbeat = await Heartbeat.findOne({ token });
+
+    if (!heartbeat) {
+      return res.status(404).json({ message: "Heartbeat endpoint not found" });
+    }
+
+    if (!heartbeat.isActive) {
+      return res.status(400).json({ message: "Heartbeat monitor is paused" });
+    }
+
+    const now = new Date();
+    const prevStatus = heartbeat.status;
+    const intervalMinutes = getIntervalMinutes(heartbeat.interval);
+
+    heartbeat.status = "up";
+    heartbeat.lastPingAt = now;
+    heartbeat.nextExpectedPingAt = new Date(
+      now.getTime() + intervalMinutes * 60 * 1000,
+    );
+    heartbeat.consecutiveMissed = 0;
+    heartbeat.pingCount += 1;
+    heartbeat.upCount += 1;
+
+    await heartbeat.save();
+
+    await HeartbeatLog.create({
+      heartbeatId: heartbeat._id,
+      status: "up",
+      ip: req.ip,
+      userAgent: req.headers["user-agent"] || null,
+      timestamp: now,
+    });
+
+    if (prevStatus === "down") {
+      const message = `Heartbeat monitor ${heartbeat.name} is back UP (successful check-in)`;
+      await dispatchHeartbeatNotifications(heartbeat, "recovered", message);
+    }
+
+    return res.status(200).json({
+      message: "Heartbeat received successfully",
+      status: "up",
+      lastPingAt: heartbeat.lastPingAt,
+      nextExpectedPingAt: heartbeat.nextExpectedPingAt,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Error recording heartbeat ping",
+      error: error.message,
+    });
   }
 };

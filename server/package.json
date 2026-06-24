@@ -1,6 +1,6 @@
 {
   "name": "com.pingmonitor.sp",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "pingmonitor is monitoring url checking if server is down",
   "main": "server.js",
   "type": "module",
@@ -9,7 +9,8 @@
     "start": "cross-env NODE_ENV=production node server.js",
     "dev": "cross-env NODE_ENV=development nodemon server.js",
     "worker:region": "node src/workers/regionalWorker.js",
-    "deploy:test": "cross-env NODE_ENV=test node server.js"
+    "deploy:test": "cross-env NODE_ENV=test node server.js",
+    "db:seed": "node src/scripts/runSeed.js"
   },
   "keywords": [
     "saas",
@@ -26,6 +27,9 @@
   "dependencies": {
     "axios": "^1.14.0",
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.65.1",
+    "playwright": "^1.49.1",
+    "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "cross-env": "^10.1.0",
@@ -34,10 +38,10 @@
     "express-rate-limit": "^8.3.2",
     "express-validator": "^7.3.2",
     "helmet": "^8.1.0",
-    "bullmq": "^5.65.1",
     "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.3",
+    "multer": "^2.1.1",
     "node-cron": "^4.2.1",
     "resend": "^6.1.3",
     "swagger-jsdoc": "^6.2.8",

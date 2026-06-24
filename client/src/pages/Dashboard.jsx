@@ -7,7 +7,7 @@ import Pagination from "../components/Pagination";
 import api from "../api/axios";
 import { toast } from "../context/ToastContext";
 import { useAuth } from "../hook/useAuth";
-import { FiPlus, FiAlertTriangle, FiActivity } from "react-icons/fi";
+import { FiPlus, FiAlertTriangle, FiActivity, FiClock, FiCheck } from "react-icons/fi";
 import { useWebSocket } from "../hook/useWebSocket";
 
 export default function Dashboard() {
@@ -156,10 +156,14 @@ export default function Dashboard() {
       <main className="main-content">
         <div className="dashboard-header">
           <div>
-            <h1 className="page-title">Dashboard</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
+              <h1 className="page-title">Dashboard</h1>
+              <span className="badge badge-up" style={{ fontSize: "10px", padding: "2px 8px", alignSelf: "center" }}>
+                LIVE
+              </span>
+            </div>
             <p className="page-subtitle">
-              {monitors.length} monitor{monitors.length !== 1 ? "s" : ""} active
-              · Live WebSocket active
+              Tracking {monitors.length} active monitor{monitors.length !== 1 ? "s" : ""}
             </p>
           </div>
           <button
@@ -204,19 +208,39 @@ export default function Dashboard() {
         {!loading && monitors.length > 0 && (
           <div className="stats-grid" style={{ marginBottom: "32px" }}>
             <div className="stat-card">
-              <div className="stat-label">Total</div>
+              <div className="stat-card-header">
+                <span className="card-icon-wrapper">
+                  <FiActivity className="stat-card-icon text-accent" />
+                </span>
+                <span className="stat-label">Total</span>
+              </div>
               <div className="stat-value">{monitors.length}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Online</div>
+              <div className="stat-card-header">
+                <span className="card-icon-wrapper">
+                  <FiCheck className="stat-card-icon text-green" />
+                </span>
+                <span className="stat-label">Online</span>
+              </div>
               <div className="stat-value green">{upCount}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Down</div>
+              <div className="stat-card-header">
+                <span className="card-icon-wrapper">
+                  <FiAlertTriangle className="stat-card-icon text-red" />
+                </span>
+                <span className="stat-label">Down</span>
+              </div>
               <div className="stat-value red">{downCount}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Pending</div>
+              <div className="stat-card-header">
+                <span className="card-icon-wrapper">
+                  <FiClock className="stat-card-icon text-yellow" />
+                </span>
+                <span className="stat-label">Pending</span>
+              </div>
               <div className="stat-value yellow">{unknownCount}</div>
             </div>
           </div>

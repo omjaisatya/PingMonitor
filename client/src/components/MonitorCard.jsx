@@ -3,12 +3,11 @@ import "../styles/MonitorCard.css";
 import { useState } from "react";
 import apiClient from "../api/axios";
 import { toast } from "../context/ToastContext";
+import { FiServer } from "react-icons/fi";
 
 export default function MonitorCard({ monitor, onEdit, onDelete }) {
   const [isActive, setIsActive] = useState(monitor.isActive);
   const [loading, isLoading] = useState(false);
-
-  const statusClass = `badge badge-${monitor.status}`;
 
   const handleToggleActive = async () => {
     isLoading(true);
@@ -25,18 +24,29 @@ export default function MonitorCard({ monitor, onEdit, onDelete }) {
     }
   };
 
+  const isUp = monitor.status === "up";
+  const isDown = monitor.status === "down";
+
   return (
     <div
-      className={`monitor-card ${monitor.status === "down" ? "monitor-card--down" : ""}`}
+      className={`monitor-card ${isDown ? "monitor-card--down" : ""} ${!isActive ? "monitor-card--paused" : ""}`}
     >
       <div className="monitor-card-header">
-        <span className={statusClass}>{monitor.status}</span>
+        <div className="monitor-card-header-left">
+          <span className="card-icon-wrapper">
+            <FiServer className={`monitor-card-icon ${isUp ? "text-green" : isDown ? "text-red" : "text-yellow"}`} />
+          </span>
+          <div className="monitor-status-row">
+            <span className={`monitor-status-dot ${monitor.status} ${isActive ? "active" : "paused"}`} />
+            <span className="monitor-status-text">{isActive ? monitor.status : "paused"}</span>
+          </div>
+        </div>
         <span className="monitor-interval mono">↻ {monitor.interval}m</span>
       </div>
 
       <div className="monitor-card-body">
         <h3 className="monitor-name">{monitor.name}</h3>
-        <p className="monitor-url mono">{monitor.url}</p>
+        <p className="monitor-url mono" title={monitor.url}>{monitor.url}</p>
       </div>
 
       <div className="monitor-actions">
@@ -62,7 +72,7 @@ export default function MonitorCard({ monitor, onEdit, onDelete }) {
         </button>
       </div>
       <div className="monitor-card-footer">
-        <Link to={`/monitors/${monitor._id}`} className="btn btn-ghost btn-sm">
+        <Link to={`/monitors/${monitor._id}`} className="btn btn-ghost btn-sm monitor-logs-link">
           View Logs →
         </Link>
       </div>

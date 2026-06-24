@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com).
 
+## [0.0.4] - 2026-06-09
+
+### Server (Backend)
+
+#### Added
+
+- **User Avatar Storage**: Integrates Multer/Cloudinary to upload profile photos, storing secure URL references and public IDs on User schemas.
+- **Heartbeat Checks**: UUID v4 token public check-in endpoints (`/api/public/ping/:token`) enwrapped with rate limit configurations.
+- **Playwright Synthetic Monitoring**: Launches headless Chromium browser, records web performance metrics (load time, DOM ready, DNS, TCP, TTFB), unhandled exceptions, failed network request logs, and saves failed screenshots and recording videos.
+- **Advanced API Checks & Assertions**: Axios request engine supporting GET, POST, PUT, DELETE, and GraphQL payloads. Parses custom assertions lists matching property paths safely without eval.
+- **Secure Credentials Storage**: AES-256-GCM symmetric encryption for variables and custom header parameters. Encryption keys are derived dynamically using JWT_SECRET.
+- **Daily Cleanup Cron Task**: Automated daily pruner deleting enqueued logs and physical screenshot/video media files older than 7 days.
+
+#### Fixed
+
+- **Geographic Latency Quorum**: Fixed Asian-only check loop by storing regional ping results for all default regions, simulating geographical latency offsets in single-node mode.
+
+### Client (Frontend)
+
+#### Added
+
+- **Avatar Fallback System**: Displays user uploaded image, falling back sequentially to MD5 email-hashed Gravatar and initials-generated DiceBear SVG. Includes drag-and-drop settings panel in User Profile.
+- **Heartbeat & Synthetics Dashboards**: Premium lists grid, details metrics summaries, action controls (pause/resume, run now), collapsable script setups, and logs history pagination.
+- **Playwright Replay modal**: Embedded HTML5 video playback, zoomable failure screenshots, console logger logs, and failed network queries listings.
+- **API Monitors & Collections**: Dashboard mapping API collections with variables tables, HTTP method badges, and assertion list creators.
+- **Git-like Response Diff Viewer**: Built client-side LCS diff visualizer highlighting line-by-line additions and deletions of response bodies between runs.
+
 ## [0.0.3] - 2026-06-06
 
 ### Server (Backend)
