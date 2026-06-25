@@ -1,5 +1,15 @@
 FROM node:20-alpine
 
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
+RUN apk update && apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+
 WORKDIR /app
 
 COPY package*.json ./

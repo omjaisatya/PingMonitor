@@ -77,7 +77,7 @@ const serializeUser = (user) => ({
   id: user._id,
   name: user.name,
   email: user.email,
-  isVerified: user.isVerified,
+  isVerified: process.env.NODE_ENV === "development" ? true : user.isVerified,
   createdAt: user.createdAt,
   statusPageEnabled: user.statusPageEnabled,
   statusPageTitle: user.statusPageTitle,
@@ -120,7 +120,7 @@ const signup = async (req, res) => {
       name,
       email,
       password: hashPass,
-      isVerified: false,
+      isVerified: process.env.NODE_ENV === "development",
     });
 
     const { accessToken, refreshToken } = generateTokenPair(newUser._id);

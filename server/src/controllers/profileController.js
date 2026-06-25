@@ -1,6 +1,14 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import User from "../models/User.js";
+import Monitor from "../models/Monitor.js";
+import SyntheticMonitor from "../models/SyntheticMonitor.js";
+import ApiMonitor from "../models/ApiMonitor.js";
+import Heartbeat from "../models/Heartbeat.js";
+import MaintenanceWindow from "../models/MaintenanceWindow.js";
+import Incident from "../models/Incident.js";
+import AlertLog from "../models/AlertLog.js";
+import EmailLog from "../models/EmailLog.js";
 import { blacklistToken } from "../../utils/tokenBlacklist.js";
 import crypto from "crypto";
 import { hashToken } from "../../utils/tokenCofig.js";
@@ -126,7 +134,7 @@ export const updateEmail = async (req, res) => {
     }
 
     user.email = email.toLowerCase();
-    user.isVerified = false;
+    user.isVerified = process.env.NODE_ENV === "development";
     // invalidate all sessions since email changed
     user.refreshTokenHash = null;
     try {
@@ -247,7 +255,8 @@ export const updateStatusPageSettings = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        isVerified: user.isVerified,
+        isVerified:
+          process.env.NODE_ENV === "development" ? true : user.isVerified,
         statusPageEnabled: user.statusPageEnabled,
         statusPageTitle: user.statusPageTitle,
         statusPageDescription: user.statusPageDescription,
@@ -415,6 +424,61 @@ export const sendTestEmailReport = async (req, res) => {
     });
 
     res.json({ message: "Test report sent successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const exportAllUserData = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+
+    const userProfile = await User.findById(userId).select(
+      "-password -refreshTokenHash -emailVerificationTokenHash -forgotPasswordTokenHash",
+    );
+
+    if (!userProfile) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const monitors = await Monitor.find({ userId });
+    const syntheticMonitors = await SyntheticMonitor.find({ userId });
+    const apiMonitors = await ApiMonitor.find({ userId });
+    const heartbeats = await Heartbeat.find({ userId });
+    const maintenanceWindows = await MaintenanceWindow.find({ userId });
+    const incidents = await Incident.find({ userId });
+
+    const monitorIds = monitors.map((m) => m._id);
+    const alertLogs = await AlertLog.find({ monitorId: { $in: monitorIds } })
+      .sort({ timestamp: -1 })
+      .populate("monitorId", "name url");
+
+    const emailLogs = await EmailLog.find({ userId })
+      .sort({ timestamp: -1 })
+      .populate("monitorId", "name url");
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      profile: userProfile,
+      monitors,
+      syntheticMonitors,
+      apiMonitors,
+      heartbeats,
+      maintenanceWindows,
+      incidents,
+      alertLogs,
+      emailLogs,
+    };
+
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="pingmonitor_export_${userProfile.name
+        .replace(/[^a-z0-9]/gi, "_")
+        .toLowerCase()}_${new Date().toISOString().split("T")[0]}.json"`,
+    );
+
+    return res.status(200).send(JSON.stringify(exportData, null, 2));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

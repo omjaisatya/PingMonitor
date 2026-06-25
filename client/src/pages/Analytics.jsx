@@ -186,33 +186,32 @@ export default function Analytics() {
     return `${hrs}h ${remainingMin}m`;
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     try {
+      let url = "";
+      let filename = "";
       if (selectedMonitorId && monitorStats) {
-        const headers = ["Date", "Average Response Time (ms)"];
-        const rows = monitorStats.trends.map((t) => [t.date, t.responseTime]);
-        downloadCSV(
-          `${monitorStats.monitor.name}_stats_report.csv`,
-          headers,
-          rows,
-        );
+        url = `/analytics/export/trends/${selectedMonitorId}?range=${range}`;
+        if (range === "custom" && startDate && endDate) {
+          url += `&startDate=${startDate}&endDate=${endDate}`;
+        }
+        filename = `${monitorStats.monitor.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_trends_report.csv`;
       } else {
-        const headers = [
-          "Monitor",
-          "URL",
-          "Status Change",
-          "Reason/Message",
-          "Timestamp",
-        ];
-        const rows = alertsLog.map((l) => [
-          l.monitorId?.name || "Deleted Monitor",
-          l.monitorId?.url || "N/A",
-          l.status.toUpperCase(),
-          l.message,
-          l.timestamp,
-        ]);
-        downloadCSV("alerts_history_report.csv", headers, rows);
+        url = "/analytics/export/alerts";
+        filename = "alerts_history_report.csv";
       }
+
+      const response = await api.get(url, { responseType: "blob" });
+      const blob = new Blob([response.data], { type: "text/csv" });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
       toast.success("CSV report downloaded successfully");
     } catch (err) {
       toast.error("Failed to export CSV report");
@@ -220,26 +219,31 @@ export default function Analytics() {
     }
   };
 
-  const downloadCSV = (filename, headers, rows) => {
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [
-        headers.join(","),
-        ...rows.map((e) =>
-          e.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(","),
-        ),
-      ].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const handlePrintPDF = async () => {
+    try {
+      let url = "/analytics/export/pdf";
+      let filename = "global_system_report.pdf";
+      if (selectedMonitorId && monitorStats) {
+        url += `?monitorId=${selectedMonitorId}`;
+        filename = `${monitorStats.monitor.name.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.pdf`;
+      }
 
-  const handlePrintPDF = () => {
-    window.print();
+      const response = await api.get(url, { responseType: "blob" });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      toast.success("PDF report downloaded successfully");
+    } catch (err) {
+      toast.error("Failed to export PDF report");
+      console.log("Failed to export PDF report", err);
+    }
   };
 
   return (
@@ -410,9 +414,9 @@ export default function Analytics() {
                     <div className="stat-card">
                       <div className="stat-label">Avg Response (Last 30d)</div>
                       <div className="stat-value">
-                        {overview?.avgResponseTime
+                        {overview?.avgResponseTime && !isNaN(overview.avgResponseTime)
                           ? `${overview.avgResponseTime}ms`
-                          : "—"}
+                          : "0ms"}
                       </div>
                     </div>
                   </div>
@@ -580,9 +584,9 @@ export default function Analytics() {
                     <div className="stat-card">
                       <div className="stat-label">Avg Response Time</div>
                       <div className="stat-value">
-                        {monitorStats?.averageResponseTime
+                        {monitorStats?.averageResponseTime && !isNaN(monitorStats.averageResponseTime)
                           ? `${monitorStats.averageResponseTime}ms`
-                          : "—"}
+                          : "0ms"}
                       </div>
                     </div>
                     <div className="stat-card">

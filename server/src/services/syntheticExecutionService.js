@@ -67,10 +67,14 @@ export const runSyntheticCheck = async (scriptCode, timeoutMs = 30000) => {
   let videoUrl = "";
   let metrics = { loadTime: 0, domReady: 0, dns: 0, tcp: 0, ttfb: 0 };
 
-  const browser = await chromium.launch({
+  const launchOptions = {
     headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+  };
+  if (process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD === "1") {
+    launchOptions.executablePath = "/usr/bin/chromium-browser";
+  }
+  const browser = await chromium.launch(launchOptions);
 
   const videoDir = path.join(process.cwd(), "uploads", "videos");
   const context = await browser.newContext({

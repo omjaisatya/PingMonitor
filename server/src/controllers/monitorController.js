@@ -131,7 +131,7 @@ const getMonitorById = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const queryObj = { monitorId: monitor._id };
+    const queryObj = { monitorId: monitor._id, region: { $in: ["quorum", "central"] } };
     if (req.query.status && req.query.status !== "all") {
       queryObj.status = req.query.status;
     }

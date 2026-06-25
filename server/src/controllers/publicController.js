@@ -77,7 +77,7 @@ export const getPublicStatus = async (req, res) => {
 
     const monitorsWithLogs = await Promise.all(
       monitors.map(async (monitor) => {
-        const logs = await Log.find({ monitorId: monitor._id })
+        const logs = await Log.find({ monitorId: monitor._id, region: { $in: ["quorum", "central"] } })
           .sort({ timestamp: -1 })
           .limit(15)
           .select("status statusCode responseTime timestamp");
