@@ -199,6 +199,8 @@ export const updateStatusPageSettings = async (req, res) => {
       statusPageTitle,
       statusPageDescription,
       statusPageSlug,
+      statusPageShowUrl,
+      statusPageCandlePeriod,
     } = req.body;
 
     const user = await User.findById(req.user._id);
@@ -248,6 +250,20 @@ export const updateStatusPageSettings = async (req, res) => {
       }
     }
 
+    if (statusPageShowUrl !== undefined) {
+      user.statusPageShowUrl = !!statusPageShowUrl;
+    }
+
+    if (statusPageCandlePeriod !== undefined) {
+      const allowedPeriods = ["minutes", "day", "month"];
+      if (!allowedPeriods.includes(statusPageCandlePeriod)) {
+        return res.status(400).json({
+          message: "Candle period must be minutes, day, or month",
+        });
+      }
+      user.statusPageCandlePeriod = statusPageCandlePeriod;
+    }
+
     await user.save();
     res.json({
       message: "Status page settings updated successfully",
@@ -261,6 +277,8 @@ export const updateStatusPageSettings = async (req, res) => {
         statusPageTitle: user.statusPageTitle,
         statusPageDescription: user.statusPageDescription,
         statusPageSlug: user.statusPageSlug,
+        statusPageShowUrl: user.statusPageShowUrl,
+        statusPageCandlePeriod: user.statusPageCandlePeriod,
         themePreference: user.themePreference || "dark",
       },
     });

@@ -6,6 +6,7 @@ import Incident from "../models/Incident.js";
 import Heartbeat from "../models/Heartbeat.js";
 import HeartbeatLog from "../models/HeartbeatLog.js";
 import MaintenanceWindow from "../models/MaintenanceWindow.js";
+import MonitorStats from "../models/MonitorStats.js";
 import { dispatchHeartbeatNotifications } from "../services/heartbeatNotificationService.js";
 
 const generateSvgBadge = (label, statusText, statusColor) => {
@@ -70,21 +71,82 @@ export const getPublicStatus = async (req, res) => {
         .json({ message: "This status page is not available" });
     }
 
+    const showUrl = user.statusPageShowUrl !== false;
+    const candlePeriod = user.statusPageCandlePeriod || "minutes";
+
+    const selectFields = showUrl
+      ? "name url status updatedAt interval"
+      : "name status updatedAt interval";
+
     const monitors = await Monitor.find({
       userId: user._id,
       isActive: true,
-    }).select("name url status updatedAt interval");
+    }).select(selectFields);
 
     const monitorsWithLogs = await Promise.all(
       monitors.map(async (monitor) => {
-        const logs = await Log.find({ monitorId: monitor._id, region: { $in: ["quorum", "central"] } })
-          .sort({ timestamp: -1 })
-          .limit(15)
-          .select("status statusCode responseTime timestamp");
+        let recentLogs = [];
+
+        if (candlePeriod === "day") {
+          const stats = await MonitorStats.find({ monitorId: monitor._id })
+            .sort({ date: -1 })
+            .limit(15);
+          recentLogs = stats.map((s, index) => ({
+            status: s.downCount > 0 ? "down" : "up",
+            statusCode: s.downCount > 0 ? 500 : 200,
+            responseTime: s.responseTimeCount > 0 ? Math.round(s.responseTimeSum / s.responseTimeCount) : null,
+            timestamp: s.date,
+            _id: s._id || index,
+          })).reverse();
+        } else if (candlePeriod === "month") {
+          const monthlyAgg = await MonitorStats.aggregate([
+            {
+              $match: {
+                monitorId: monitor._id,
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  year: { $year: "$date" },
+                  month: { $month: "$date" },
+                },
+                downCount: { $sum: "$downCount" },
+                responseTimeSum: { $sum: "$responseTimeSum" },
+                responseTimeCount: { $sum: "$responseTimeCount" },
+                date: { $first: "$date" },
+              },
+            },
+            {
+              $sort: { "_id.year": -1, "_id.month": -1 },
+            },
+            {
+              $limit: 12,
+            },
+          ]);
+
+          recentLogs = monthlyAgg.map((m, index) => {
+            const d = new Date(m.date);
+            d.setDate(1);
+            return {
+              status: m.downCount > 0 ? "down" : "up",
+              statusCode: m.downCount > 0 ? 500 : 200,
+              responseTime: m.responseTimeCount > 0 ? Math.round(m.responseTimeSum / m.responseTimeCount) : null,
+              timestamp: d,
+              _id: `${m._id.year}-${m._id.month}`,
+            };
+          }).reverse();
+        } else {
+          const logs = await Log.find({ monitorId: monitor._id, region: { $in: ["quorum", "central"] } })
+            .sort({ timestamp: -1 })
+            .limit(15)
+            .select("status statusCode responseTime timestamp");
+          recentLogs = logs.reverse();
+        }
 
         return {
           ...monitor.toObject(),
-          recentLogs: logs.reverse(),
+          recentLogs,
         };
       }),
     );
@@ -120,6 +182,7 @@ export const getPublicStatus = async (req, res) => {
       title: user.statusPageTitle,
       description: user.statusPageDescription,
       systemStatus,
+      candlePeriod,
       monitors: monitorsWithLogs,
       incidents: publicIncidents,
       maintenanceWindows,

@@ -295,7 +295,10 @@
   margin-top: 32px;
 }
 
-.btn-primary {
+.synthetic-container .btn-primary,
+.api-container .btn-primary,
+.synthetic-detail-container .btn-primary,
+.synthetic-modal-content .btn-primary {
   background: var(--accent-color, #6c5ce7);
   color: #ffffff;
   border: none;
@@ -310,17 +313,26 @@
   transition: opacity 0.15s ease;
 }
 
-.btn-primary:hover {
+.synthetic-container .btn-primary:hover,
+.api-container .btn-primary:hover,
+.synthetic-detail-container .btn-primary:hover,
+.synthetic-modal-content .btn-primary:hover {
   opacity: 0.9;
 }
 
-.btn-primary:disabled {
+.synthetic-container .btn-primary:disabled,
+.api-container .btn-primary:disabled,
+.synthetic-detail-container .btn-primary:disabled,
+.synthetic-modal-content .btn-primary:disabled {
   background: #444455;
   color: #8888aa;
   cursor: not-allowed;
 }
 
-.btn-secondary {
+.synthetic-container .btn-secondary,
+.api-container .btn-secondary,
+.synthetic-detail-container .btn-secondary,
+.synthetic-modal-content .btn-secondary {
   background: #222235;
   color: #ffffff;
   border: 1px solid #222235;
@@ -332,7 +344,10 @@
   transition: background 0.15s ease;
 }
 
-.btn-secondary:hover {
+.synthetic-container .btn-secondary:hover,
+.api-container .btn-secondary:hover,
+.synthetic-detail-container .btn-secondary:hover,
+.synthetic-modal-content .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.05);
   color: #000;
 }

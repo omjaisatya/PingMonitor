@@ -2,6 +2,23 @@ import crypto from "crypto";
 import Heartbeat from "../models/Heartbeat.js";
 import HeartbeatLog from "../models/HeartbeatLog.js";
 
+const getIntervalMinutes = (interval) => {
+  switch (interval) {
+    case "1min":
+      return 1;
+    case "5min":
+      return 5;
+    case "15min":
+      return 15;
+    case "hourly":
+      return 60;
+    case "daily":
+      return 1440;
+    default:
+      return 5;
+  }
+};
+
 const createHeartbeat = async (req, res) => {
   try {
     const {
@@ -28,6 +45,7 @@ const createHeartbeat = async (req, res) => {
     }
 
     const token = crypto.randomUUID();
+    const intervalMinutes = getIntervalMinutes(interval);
 
     const heartbeat = await Heartbeat.create({
       userId: req.user._id,
@@ -35,6 +53,7 @@ const createHeartbeat = async (req, res) => {
       token,
       interval,
       gracePeriod: gracePeriod !== undefined ? Number(gracePeriod) : 2,
+      nextExpectedPingAt: new Date(Date.now() + intervalMinutes * 60 * 1000),
       alertChannels: {
         email: alertChannels?.email ?? true,
         webhook: alertChannels?.webhook ?? false,
@@ -230,7 +249,8 @@ const pauseToggleHeartbeat = async (req, res) => {
     } else {
       heartbeat.status = "unknown";
       heartbeat.lastPingAt = null;
-      heartbeat.nextExpectedPingAt = null;
+      const intervalMinutes = getIntervalMinutes(heartbeat.interval);
+      heartbeat.nextExpectedPingAt = new Date(Date.now() + intervalMinutes * 60 * 1000);
     }
 
     await heartbeat.save();

@@ -73,6 +73,7 @@ export const dispatchHeartbeatNotifications = async (
       try {
         await InAppNotification.create({
           userId: heartbeat.userId,
+          monitorId: heartbeat._id,
           message,
           status: eventType === "down" ? "down" : "up",
         });

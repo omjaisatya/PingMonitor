@@ -83,6 +83,8 @@ const serializeUser = (user) => ({
   statusPageTitle: user.statusPageTitle,
   statusPageDescription: user.statusPageDescription,
   statusPageSlug: user.statusPageSlug,
+  statusPageShowUrl: user.statusPageShowUrl !== undefined ? user.statusPageShowUrl : true,
+  statusPageCandlePeriod: user.statusPageCandlePeriod || "minutes",
   themePreference: user.themePreference || "dark",
 });
 

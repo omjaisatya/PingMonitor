@@ -13,7 +13,9 @@ import {
   FiPlay,
   FiPause,
   FiClock,
+  FiAlertTriangle,
 } from "react-icons/fi";
+import { FaHeart, FaHeartBroken } from "react-icons/fa";
 import "../styles/Heartbeats.css";
 
 export default function Heartbeats() {
@@ -33,6 +35,43 @@ export default function Heartbeats() {
   const [webhookAlert, setWebhookAlert] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState("");
   const [escalationEmails, setEscalationEmails] = useState("");
+
+  const [pingMonitors, setPingMonitors] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    const fetchPingMonitors = async () => {
+      try {
+        const { data } = await api.get("/monitors");
+        const mons = data.allMonitors || data.monitors || (Array.isArray(data) ? data : []);
+        setPingMonitors(mons);
+      } catch (err) {
+        console.error("Failed to fetch monitors for suggestion:", err);
+      }
+    };
+    fetchPingMonitors();
+  }, []);
+
+  useEffect(() => {
+    if (!name.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    const handler = setTimeout(() => {
+      const filtered = pingMonitors
+        .filter((mon) =>
+          mon.name.toLowerCase().includes(name.toLowerCase())
+        )
+        .map((mon) => mon.name);
+      setSuggestions(filtered);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [name, pingMonitors]);
 
   const fetchHeartbeats = useCallback(async () => {
     setLoading(true);
@@ -58,7 +97,7 @@ export default function Heartbeats() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleToggleActive = async (id, isActive) => {
+  const handleToggleActive = async (id) => {
     try {
       const { data } = await api.post(`/heartbeats/${id}/pause`);
       setHeartbeats((prev) =>
@@ -180,19 +219,39 @@ export default function Heartbeats() {
         {!loading && heartbeats.length > 0 && (
           <div className="stats-grid" style={{ marginBottom: "32px" }}>
             <div className="stat-card">
-              <div className="stat-label">Total</div>
+              <div className="stat-card-header">
+                <span className="card-icon-wrapper">
+                  <FiActivity className="stat-card-icon text-accent" />
+                </span>
+                <span className="stat-label">Total</span>
+              </div>
               <div className="stat-value">{heartbeats.length}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Healthy</div>
+              <div className="stat-card-header">
+                <span className="card-icon-wrapper">
+                  <FiCheck className="stat-card-icon text-green" />
+                </span>
+                <span className="stat-label">Healthy</span>
+              </div>
               <div className="stat-value green">{upCount}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Missing</div>
+              <div className="stat-card-header">
+                <span className="card-icon-wrapper">
+                  <FiAlertTriangle className="stat-card-icon text-red" />
+                </span>
+                <span className="stat-label">Missing</span>
+              </div>
               <div className="stat-value red">{downCount}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Paused</div>
+              <div className="stat-card-header">
+                <span className="card-icon-wrapper">
+                  <FiClock className="stat-card-icon text-yellow" />
+                </span>
+                <span className="stat-label">Paused</span>
+              </div>
               <div className="stat-value yellow">
                 {pausedCount + pendingCount}
               </div>
@@ -265,38 +324,41 @@ export default function Heartbeats() {
                   : hb.status === "down"
                     ? "heartbeat-card--down"
                     : ""
-                : "";
-              const checkInUrl = `${import.meta.env.VITE_SERVER_URL}/api/public/heartbeat/ping/${hb.token}`;
+                : "heartbeat-card--paused";
+              const checkInUrl = `${import.meta.env.VITE_SERVER_URL}/public/heartbeat/ping/${hb.token}`;
 
               return (
-                <div key={hb._id} className={`heartbeat-card ${statusClass}`}>
-                  <div className="monitor-card-header">
-                    <span
-                      className={`badge-status badge-status--${hb.isActive ? hb.status : "unknown"}`}
-                    >
-                      {hb.isActive ? hb.status : "PAUSED"}
-                    </span>
-                    <span
-                      className="monitor-interval"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
-                    >
-                      <FiClock size={12} /> {hb.interval}
-                    </span>
+                 <div key={hb._id} className={`heartbeat-card ${statusClass}`}>
+                  <div className="heartbeat-card-header">
+                    <div className="heartbeat-card-header-left">
+                      <span className="heartbeat-card-icon-wrapper">
+                        {hb.isActive ? (
+                          hb.status === "up" ? (
+                            <FaHeart className="heartbeat-card-icon heart-icon--live" />
+                          ) : (
+                            <FaHeartBroken className="heartbeat-card-icon heart-icon--broken" />
+                          )
+                        ) : (
+                          <FaHeart className="heartbeat-card-icon heart-icon--paused" />
+                        )}
+                      </span>
+                      <div className="heartbeat-status-row">
+                        <span className={`heartbeat-status-dot ${hb.isActive ? hb.status : "unknown"} ${hb.isActive ? "active" : "paused"}`} />
+                        <span className="heartbeat-status-text">{hb.isActive ? hb.status : "paused"}</span>
+                      </div>
+                    </div>
+                    <span className="heartbeat-interval mono">↻ {hb.interval}</span>
                   </div>
 
-                  <div className="monitor-card-body">
+                  <div className="heartbeat-card-body">
                     <Link
                       to={`/heartbeats/${hb._id}`}
-                      className="monitor-name"
+                      className="heartbeat-name"
                       style={{ textDecoration: "none" }}
                     >
                       {hb.name}
                     </Link>
-                    <div className="copy-input-group">
+                    <div className="copy-input-group" style={{ marginTop: "12px" }}>
                       <span className="copy-input">{checkInUrl}</span>
                       <button
                         type="button"
@@ -318,10 +380,10 @@ export default function Heartbeats() {
 
                     <div
                       style={{
-                        marginTop: "12px",
+                        marginTop: "16px",
                         display: "flex",
                         flexDirection: "column",
-                        gap: "6px",
+                        gap: "8px",
                       }}
                     >
                       <div className="heartbeat-info-row">
@@ -343,21 +405,13 @@ export default function Heartbeats() {
                     </div>
                   </div>
 
-                  <div className="monitor-actions">
+                  <div className="heartbeat-actions">
                     <button
                       type="button"
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => handleToggleActive(hb._id, hb.isActive)}
+                      className="btn btn-outline btn-sm"
+                      onClick={() => handleToggleActive(hb._id)}
                     >
-                      {hb.isActive ? (
-                        <>
-                          <FiPause size={13} /> Pause
-                        </>
-                      ) : (
-                        <>
-                          <FiPlay size={13} /> Resume
-                        </>
-                      )}
+                      {hb.isActive ? "Pause" : "Resume"}
                     </button>
                     <button
                       type="button"
@@ -365,8 +419,13 @@ export default function Heartbeats() {
                       onClick={() => handleDelete(hb._id)}
                       style={{ marginLeft: "auto" }}
                     >
-                      <FiTrash2 size={13} />
+                      Delete
                     </button>
+                  </div>
+                  <div className="heartbeat-card-footer">
+                    <Link to={`/heartbeats/${hb._id}`} className="heartbeat-logs-link">
+                      View Details →
+                    </Link>
                   </div>
                 </div>
               );
@@ -376,45 +435,64 @@ export default function Heartbeats() {
       </main>
 
       {showAddModal && (
-        <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
           <div
             className="modal"
             style={{ maxWidth: "500px" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="modal__title">Create Heartbeat Monitor</h3>
-            <p className="modal__message">
+            <h2 className="modal-title" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <FiPlus size={20} /> Create Heartbeat Monitor
+            </h2>
+            <p className="modal__message" style={{ color: "var(--text-muted)", fontSize: "13px", marginBottom: "20px" }}>
               This endpoint pings passively from your backups, cron jobs, or
               server task runners.
             </p>
-            <form onSubmit={handleCreate} className="form-layout">
-              <div className="profile-field">
-                <label className="profile-field__label">Monitor Name</label>
+            <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="form-group" style={{ position: "relative" }}>
+                <label className="form-label">Monitor Name</label>
                 <input
                   type="text"
-                  className="profile-input"
+                  className="form-input"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => {
+                    setTimeout(() => setShowSuggestions(false), 200);
+                  }}
                   placeholder="e.g. Daily DB Backup Job"
                   required
+                  autoComplete="off"
                 />
+                {showSuggestions && suggestions.length > 0 && (
+                  <ul className="suggestions-list">
+                    {suggestions.map((suggestName, idx) => (
+                      <li
+                        key={idx}
+                        className="suggestion-item"
+                        onClick={() => {
+                          setName(suggestName);
+                          setShowSuggestions(false);
+                        }}
+                      >
+                        {suggestName}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "16px",
-                }}
-              >
-                <div className="profile-field">
-                  <label className="profile-field__label">
-                    Expected Interval
-                  </label>
+              <div className="form-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div className="form-group">
+                  <label className="form-label">Expected Interval</label>
                   <select
-                    className="profile-input"
+                    className="form-input"
                     value={interval}
                     onChange={(e) => setInterval(e.target.value)}
+                    style={{ backgroundPosition: "right 12px center" }}
                   >
                     <option value="1min">1 Minute</option>
                     <option value="5min">5 Minutes</option>
@@ -423,83 +501,61 @@ export default function Heartbeats() {
                     <option value="daily">Daily</option>
                   </select>
                 </div>
-                <div className="profile-field">
-                  <label className="profile-field__label">
-                    Grace Period (Minutes)
-                  </label>
+                <div className="form-group">
+                  <label className="form-label">Grace Period (Minutes)</label>
                   <input
                     type="number"
                     min="1"
                     max="60"
-                    className="profile-input"
+                    className="form-input"
                     value={gracePeriod}
                     onChange={(e) => setGracePeriod(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="profile-field">
-                <label className="profile-field__label">Alert Channels</label>
-                <div style={{ display: "flex", gap: "16px", marginTop: "4px" }}>
-                  <label
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                    }}
-                  >
+              <div className="form-group">
+                <label className="form-label">Alert Channels</label>
+                <div style={{ display: "flex", gap: "20px", marginTop: "8px" }}>
+                  <label className="switch-label">
                     <input
                       type="checkbox"
+                      className="switch-input"
                       checked={emailAlert}
                       onChange={(e) => setEmailAlert(e.target.checked)}
                     />
-                    Email
+                    <span className="switch-slider" />
+                    <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Email</span>
                   </label>
-                  <label
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                    }}
-                  >
+                  <label className="switch-label">
                     <input
                       type="checkbox"
+                      className="switch-input"
                       checked={inAppAlert}
                       onChange={(e) => setInAppAlert(e.target.checked)}
                     />
-                    In-App
+                    <span className="switch-slider" />
+                    <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>In-App</span>
                   </label>
-                  <label
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                    }}
-                  >
+                  <label className="switch-label">
                     <input
                       type="checkbox"
+                      className="switch-input"
                       checked={webhookAlert}
                       onChange={(e) => setWebhookAlert(e.target.checked)}
                     />
-                    Webhook
+                    <span className="switch-slider" />
+                    <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Webhook</span>
                   </label>
                 </div>
               </div>
 
               {webhookAlert && (
-                <div className="profile-field animate-fade-in">
-                  <label className="profile-field__label">
-                    Webhook Endpoint URL
-                  </label>
+                <div className="form-group" style={{ animation: "fadeIn 0.2s ease" }}>
+                  <label className="form-label">Webhook Endpoint URL</label>
                   <input
                     type="url"
-                    className="profile-input"
+                    className="form-input"
                     value={webhookUrl}
                     onChange={(e) => setWebhookUrl(e.target.value)}
                     placeholder="https://yourserver.com/alerts/webhook"
@@ -508,26 +564,24 @@ export default function Heartbeats() {
                 </div>
               )}
 
-              <div className="profile-field">
-                <label className="profile-field__label">
-                  Escalation Emails
-                </label>
+              <div className="form-group">
+                <label className="form-label">Escalation Emails</label>
                 <input
                   type="text"
-                  className="profile-input"
+                  className="form-input"
                   value={escalationEmails}
                   onChange={(e) => setEscalationEmails(e.target.value)}
                   placeholder="admin@mycorp.com, devops@mycorp.com"
                 />
-                <span className="profile-field__hint">
+                <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px", display: "block" }}>
                   Comma separated list of extra email addresses to notify.
                 </span>
               </div>
 
-              <div className="modal__actions">
+              <div className="modal-actions" style={{ marginTop: "8px" }}>
                 <button
                   type="button"
-                  className="btn btn-ghost"
+                  className="btn btn-outline"
                   onClick={() => setShowAddModal(false)}
                   disabled={formLoading}
                 >

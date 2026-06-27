@@ -157,7 +157,7 @@ export default function PublicStatusPage() {
     );
   }
 
-  const { title, description, systemStatus, monitors, incidents = [], maintenanceWindows = [] } = data;
+  const { title, description, systemStatus, monitors, incidents = [], maintenanceWindows = [], candlePeriod = "minutes" } = data;
 
   const renderStatusBanner = () => {
     const bannerConfig = {
@@ -187,18 +187,32 @@ export default function PublicStatusPage() {
     );
   };
 
-  const getBarTooltipText = (bar) => {
+  const getBarTooltipText = (bar, candlePeriod) => {
     if (bar.isEmpty) return "";
-    const dateStr =
-      new Date(bar.timestamp).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }) +
-      " " +
-      new Date(bar.timestamp).toLocaleDateString([], {
+    let dateStr = "";
+    if (candlePeriod === "day") {
+      dateStr = new Date(bar.timestamp).toLocaleDateString([], {
+        year: "numeric",
         month: "short",
         day: "numeric",
       });
+    } else if (candlePeriod === "month") {
+      dateStr = new Date(bar.timestamp).toLocaleDateString([], {
+        year: "numeric",
+        month: "long",
+      });
+    } else {
+      dateStr =
+        new Date(bar.timestamp).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }) +
+        " " +
+        new Date(bar.timestamp).toLocaleDateString([], {
+          month: "short",
+          day: "numeric",
+        });
+    }
 
     const statusLabel = bar.status.toUpperCase();
     const codeLabel = bar.statusCode ? ` (${bar.statusCode})` : "";
@@ -248,10 +262,14 @@ export default function PublicStatusPage() {
               {!bar.isEmpty && (
                 <div className="uptime-tooltip">
                   <div className="tooltip-time">
-                    {new Date(bar.timestamp).toLocaleDateString()}
+                    {candlePeriod === "month"
+                      ? new Date(bar.timestamp).toLocaleDateString([], { year: "numeric", month: "long" })
+                      : candlePeriod === "day"
+                        ? new Date(bar.timestamp).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" })
+                        : new Date(bar.timestamp).toLocaleDateString()}
                   </div>
                   <div className={`tooltip-status ${isUp ? "up" : "down"}`}>
-                    {getBarTooltipText(bar)}
+                    {getBarTooltipText(bar, candlePeriod)}
                   </div>
                 </div>
               )}
@@ -318,15 +336,17 @@ export default function PublicStatusPage() {
                   />
                   {monitor.name}
                 </div>
-                <a
-                  href={monitor.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="status-monitor-row__url"
-                >
-                  {monitor.url}
-                  <FiExternalLink size={11} style={{ marginLeft: "4px" }} />
-                </a>
+                {monitor.url && (
+                  <a
+                    href={monitor.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="status-monitor-row__url"
+                  >
+                    {monitor.url}
+                    <FiExternalLink size={11} style={{ marginLeft: "4px" }} />
+                  </a>
+                )}
               </div>
 
               <div className="status-monitor-row__history">

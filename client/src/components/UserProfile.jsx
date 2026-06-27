@@ -862,10 +862,25 @@ const StatusPageSettings = ({ user, onUpdate }) => {
     user?.statusPageDescription || "Live status of our services.",
   );
   const [slug, setSlug] = useState(user?.statusPageSlug || "");
+  const [showUrl, setShowUrl] = useState(user?.statusPageShowUrl ?? true);
+  const [candlePeriod, setCandlePeriod] = useState(
+    user?.statusPageCandlePeriod || "minutes",
+  );
   const [saving, setSaving] = useState(false);
 
   const [monitors, setMonitors] = useState([]);
   const [loadingMons, setLoadingMons] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setEnabled(user.statusPageEnabled ?? true);
+      setTitle(user.statusPageTitle || "System Status");
+      setDesc(user.statusPageDescription || "Live status of our services.");
+      setSlug(user.statusPageSlug || "");
+      setShowUrl(user.statusPageShowUrl ?? true);
+      setCandlePeriod(user.statusPageCandlePeriod || "minutes");
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchMonitors = async () => {
@@ -895,6 +910,8 @@ const StatusPageSettings = ({ user, onUpdate }) => {
         statusPageTitle: title,
         statusPageDescription: desc,
         statusPageSlug: slug.trim(),
+        statusPageShowUrl: showUrl,
+        statusPageCandlePeriod: candlePeriod,
       });
       toast.success("Status page settings updated!");
       onUpdate(data.user);
@@ -937,6 +954,39 @@ const StatusPageSettings = ({ user, onUpdate }) => {
                 : "Public Status Page Disabled"}
             </span>
           </div>
+
+          <div className="toggle-control">
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={showUrl}
+                onChange={(e) => setShowUrl(e.target.checked)}
+              />
+              <span className={`slider round ${showUrl ? "active" : ""}`}>
+                <span className={`slider-thumb ${showUrl ? "active" : ""}`} />
+              </span>
+            </label>
+            <span className="toggle-label">
+              Show Monitor URLs Publicly
+            </span>
+          </div>
+
+          <Field
+            label="History Display Period"
+            hint="Granularity of status history candles on the public page"
+            id="statusCandlePeriod"
+          >
+            <select
+              id="statusCandlePeriod"
+              className="profile-input"
+              value={candlePeriod}
+              onChange={(e) => setCandlePeriod(e.target.value)}
+            >
+              <option value="minutes">Minutes (Recent Checks)</option>
+              <option value="day">Day (Daily Aggregates)</option>
+              <option value="month">Month (Monthly Aggregates)</option>
+            </select>
+          </Field>
 
           <Field
             label="Status Page Title"
