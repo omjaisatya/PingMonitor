@@ -594,6 +594,145 @@ const ChangePassword = ({ logout }) => {
   );
 };
 
+const ExportUserData = () => {
+  const [downloadingJson, setDownloadingJson] = useState(false);
+  const [downloadingAlerts, setDownloadingAlerts] = useState(false);
+  const [downloadingEmails, setDownloadingEmails] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleExportJson = async () => {
+    setDownloadingJson(true);
+    try {
+      const response = await apiClient.get("/auth/profile/export", { responseType: "blob" });
+      const blob = new Blob([response.data], { type: "application/json" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `pingmonitor_account_backup_${new Date().toISOString().split("T")[0]}.json`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Account data backup downloaded successfully!");
+    } catch (err) {
+      toast.error("Failed to export account data");
+      console.error(err);
+    } finally {
+      setDownloadingJson(false);
+    }
+  };
+
+  const handleExportAlerts = async () => {
+    setDownloadingAlerts(true);
+    try {
+      const response = await apiClient.get("/analytics/export/alerts", { responseType: "blob" });
+      const blob = new Blob([response.data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "alerts_history_full_report.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Alert history CSV downloaded!");
+    } catch (err) {
+      toast.error("Failed to export alert history CSV");
+      console.error(err);
+    } finally {
+      setDownloadingAlerts(false);
+    }
+  };
+
+  const handleExportEmails = async () => {
+    setDownloadingEmails(true);
+    try {
+      const response = await apiClient.get("/analytics/export/emails", { responseType: "blob" });
+      const blob = new Blob([response.data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "email_tracking_full_report.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Email tracking CSV downloaded!");
+    } catch (err) {
+      toast.error("Failed to export email tracking CSV");
+      console.error(err);
+    } finally {
+      setDownloadingEmails(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const response = await apiClient.get("/analytics/export/pdf", { responseType: "blob" });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "global_system_report.pdf");
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Global PDF report downloaded successfully!");
+    } catch (err) {
+      toast.error("Failed to export PDF report");
+      console.error(err);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  return (
+    <SectionCard
+      title="Export Personal Data"
+      subtitle="Download a copy of your monitors, alert history, and email tracking logs"
+      icon={<FiUpload />}
+    >
+      <div className="danger-zone-wrapper">
+        <p className="danger-description">
+          Export your complete account configuration, metrics, and history. The backup JSON file contains all your monitors, incident history, and system settings.
+        </p>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "16px" }}>
+          <button
+            className="btn btn-primary"
+            onClick={handleExportJson}
+            disabled={downloadingJson}
+          >
+            {downloadingJson ? "Exporting JSON..." : "Download Account Backup (JSON)"}
+          </button>
+          <button
+            className="btn btn-outline"
+            onClick={handleExportPdf}
+            disabled={downloadingPdf}
+          >
+            {downloadingPdf ? "Exporting PDF..." : "Download System Report (PDF)"}
+          </button>
+          <button
+            className="btn btn-outline"
+            onClick={handleExportAlerts}
+            disabled={downloadingAlerts}
+          >
+            {downloadingAlerts ? "Exporting CSV..." : "Download Alerts Log (CSV)"}
+          </button>
+          <button
+            className="btn btn-outline"
+            onClick={handleExportEmails}
+            disabled={downloadingEmails}
+          >
+            {downloadingEmails ? "Exporting CSV..." : "Download Emails Log (CSV)"}
+          </button>
+        </div>
+      </div>
+    </SectionCard>
+  );
+};
+
 const DeactivateAccount = ({ logout }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -723,10 +862,25 @@ const StatusPageSettings = ({ user, onUpdate }) => {
     user?.statusPageDescription || "Live status of our services.",
   );
   const [slug, setSlug] = useState(user?.statusPageSlug || "");
+  const [showUrl, setShowUrl] = useState(user?.statusPageShowUrl ?? true);
+  const [candlePeriod, setCandlePeriod] = useState(
+    user?.statusPageCandlePeriod || "minutes",
+  );
   const [saving, setSaving] = useState(false);
 
   const [monitors, setMonitors] = useState([]);
   const [loadingMons, setLoadingMons] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setEnabled(user.statusPageEnabled ?? true);
+      setTitle(user.statusPageTitle || "System Status");
+      setDesc(user.statusPageDescription || "Live status of our services.");
+      setSlug(user.statusPageSlug || "");
+      setShowUrl(user.statusPageShowUrl ?? true);
+      setCandlePeriod(user.statusPageCandlePeriod || "minutes");
+    }
+  }, [user]);
 
   useEffect(() => {
     const fetchMonitors = async () => {
@@ -756,6 +910,8 @@ const StatusPageSettings = ({ user, onUpdate }) => {
         statusPageTitle: title,
         statusPageDescription: desc,
         statusPageSlug: slug.trim(),
+        statusPageShowUrl: showUrl,
+        statusPageCandlePeriod: candlePeriod,
       });
       toast.success("Status page settings updated!");
       onUpdate(data.user);
@@ -798,6 +954,39 @@ const StatusPageSettings = ({ user, onUpdate }) => {
                 : "Public Status Page Disabled"}
             </span>
           </div>
+
+          <div className="toggle-control">
+            <label className="switch">
+              <input
+                type="checkbox"
+                checked={showUrl}
+                onChange={(e) => setShowUrl(e.target.checked)}
+              />
+              <span className={`slider round ${showUrl ? "active" : ""}`}>
+                <span className={`slider-thumb ${showUrl ? "active" : ""}`} />
+              </span>
+            </label>
+            <span className="toggle-label">
+              Show Monitor URLs Publicly
+            </span>
+          </div>
+
+          <Field
+            label="History Display Period"
+            hint="Granularity of status history candles on the public page"
+            id="statusCandlePeriod"
+          >
+            <select
+              id="statusCandlePeriod"
+              className="profile-input"
+              value={candlePeriod}
+              onChange={(e) => setCandlePeriod(e.target.value)}
+            >
+              <option value="minutes">Minutes (Recent Checks)</option>
+              <option value="day">Day (Daily Aggregates)</option>
+              <option value="month">Month (Monthly Aggregates)</option>
+            </select>
+          </Field>
 
           <Field
             label="Status Page Title"
@@ -1272,6 +1461,7 @@ export default function UserProfile() {
             )}
             {activeTab === "account" && (
               <>
+                <ExportUserData />
                 <DeactivateAccount logout={logout} />
                 <DeleteAccount logout={logout} />
               </>

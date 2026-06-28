@@ -246,44 +246,87 @@ export default function MonitorDetails() {
   const upLogs = logs.filter((l) => l.status === "up").length;
   const uptimePct =
     logs.length > 0 ? ((upLogs / logs.length) * 100).toFixed(1) : null;
+  const responseTimes = logs.filter((l) => typeof l.responseTime === "number" && !isNaN(l.responseTime) && l.responseTime > 0);
   const avgResponse =
-    logs.length > 0
+    responseTimes.length > 0
       ? Math.round(
-          logs
-            .filter((l) => l.responseTime)
-            .reduce((acc, l) => acc + l.responseTime, 0) /
-            logs.filter((l) => l.responseTime).length,
+          responseTimes.reduce((acc, l) => acc + l.responseTime, 0) /
+            responseTimes.length,
         )
-      : null;
+      : 0;
 
   if (loading) {
     return (
       <div className="page-wrapper">
         <Navbar />
         <main className="main-content">
+          {/* Back link */}
+          <div className="skeleton" style={{ width: '100px', height: '16px', marginBottom: '24px' }} />
+
+          {/* Header */}
           <div className="detail-header">
-            <div className="detail-header-left" style={{ width: "60%" }}>
-              <div className="skeleton skeleton-title" style={{ width: "40%", height: "32px", marginBottom: "8px" }} />
-              <div className="skeleton skeleton-text" style={{ width: "60%", height: "16px" }} />
+            <div className="detail-header-left">
+              <div className="detail-title-row" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div className="skeleton" style={{ width: '250px', height: '36px' }} />
+                <div className="skeleton" style={{ width: '60px', height: '20px', borderRadius: 'var(--radius-sm)' }} />
+              </div>
+              <div className="skeleton" style={{ width: '350px', height: '14px', marginTop: '8px' }} />
             </div>
             <div className="detail-actions">
-              <div className="skeleton" style={{ width: "75px", height: "34px", borderRadius: "var(--radius-md)" }} />
-              <div className="skeleton" style={{ width: "75px", height: "34px", borderRadius: "var(--radius-md)", marginLeft: "12px" }} />
+              <div className="skeleton" style={{ width: '70px', height: '32px' }} />
+              <div className="skeleton" style={{ width: '85px', height: '32px' }} />
             </div>
           </div>
+
           <div className="stats-grid" style={{ marginBottom: "32px" }}>
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="stat-card" style={{ height: "100px" }}>
-                <div className="skeleton skeleton-text" style={{ width: "45%", height: "12px", marginBottom: "12px" }} />
-                <div className="skeleton skeleton-text" style={{ width: "65%", height: "24px" }} />
+              <div key={i} className="stat-card" style={{ height: "105px", display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div className="skeleton" style={{ width: '60px', height: '12px' }} />
+                <div className="skeleton" style={{ width: '120px', height: '32px' }} />
               </div>
             ))}
           </div>
+
+          <section className="regional-panel" style={{ height: 'auto', minHeight: '300px' }}>
+            <div className="regional-panel__header" style={{ marginBottom: '18px', display: 'flex', justifyContent: 'space-between' }}>
+              <div>
+                <div className="skeleton" style={{ width: '180px', height: '24px', marginBottom: '6px' }} />
+                <div className="skeleton" style={{ width: '240px', height: '14px' }} />
+              </div>
+              <div className="skeleton" style={{ width: '120px', height: '24px' }} />
+            </div>
+            <div className="regional-grid">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="regional-card" style={{ height: '135px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div className="regional-card__top" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 0 }}>
+                    <div className="skeleton" style={{ width: '80px', height: '16px' }} />
+                    <div className="skeleton" style={{ width: '50px', height: '20px' }} />
+                  </div>
+                  <div className="skeleton" style={{ width: '100px', height: '12px' }} />
+                  <div className="skeleton" style={{ width: '120px', height: '12px' }} />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '3px', marginTop: 'auto' }}>
+                    {Array.from({ length: 12 }).map((_, j) => (
+                      <div key={j} className="skeleton" style={{ aspectRatio: '1', borderRadius: '3px' }} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <div className="tabs-header" style={{ marginBottom: '24px', display: 'flex', gap: '8px' }}>
+            <div className="skeleton" style={{ width: '120px', height: '34px', borderRadius: 'var(--radius-md)' }} />
+            <div className="skeleton" style={{ width: '160px', height: '34px', borderRadius: 'var(--radius-md)' }} />
+          </div>
+
           <div className="detail-section">
-            <div className="skeleton skeleton-title" style={{ width: "25%", height: "24px" }} />
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="skeleton" style={{ height: "42px", borderRadius: "var(--radius-md)" }} />
+            <div className="section-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div className="skeleton" style={{ width: '200px', height: '24px' }} />
+              <div className="skeleton" style={{ width: '180px', height: '32px' }} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="skeleton" style={{ height: "48px", borderRadius: "var(--radius-md)" }} />
               ))}
             </div>
           </div>
@@ -376,7 +419,7 @@ export default function MonitorDetails() {
               <FiClock size={14} style={{ color: "var(--accent)" }} /> Avg Response
             </div>
             <div className="stat-value">
-              {avgResponse !== null ? `${avgResponse}ms` : "—"}
+              {avgResponse !== null && !isNaN(avgResponse) ? `${avgResponse}ms` : "0ms"}
             </div>
           </div>
           <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
@@ -479,7 +522,7 @@ export default function MonitorDetails() {
                             <span
                               className={`status-code ${log.statusCode >= 400 || !log.statusCode ? "code-error" : "code-ok"}`}
                             >
-                              {log.statusCode ?? "—"}
+                              {log.statusCode ?? (log.status === "down" ? "ERR" : "—")}
                             </span>
                           </td>
                           <td>
@@ -618,7 +661,7 @@ export default function MonitorDetails() {
                   <div className="stat-card">
                     <div className="stat-label">Avg Response Time</div>
                     <div className="stat-value">
-                      {monitorStats?.averageResponseTime ? `${monitorStats.averageResponseTime}ms` : "—"}
+                      {monitorStats?.averageResponseTime && !isNaN(monitorStats.averageResponseTime) ? `${monitorStats.averageResponseTime}ms` : "0ms"}
                     </div>
                   </div>
                   <div className="stat-card">

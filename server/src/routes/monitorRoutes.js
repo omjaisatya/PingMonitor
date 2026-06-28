@@ -20,7 +20,7 @@ import validate from "../validators/validate.js";
 const router = express.Router();
 
 const requireVerifiedAccount = (req, res, next) => {
-  if (req.user.isVerified === false) {
+  if (req.user.isVerified === false && process.env.NODE_ENV !== "development") {
     return res.status(403).json({
       message:
         "Please verify your email before creating or changing monitors. Verification is required for alert delivery.",

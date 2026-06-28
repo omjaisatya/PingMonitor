@@ -14,7 +14,7 @@ const Maintenance = () => {
   const fetchWindows = async () => {
     setLoading(true);
     try {
-      const { data } = await apiClient.get("/api/maintenance");
+      const { data } = await apiClient.get("/maintenance");
       setWindows(data);
     } catch (err) {
       console.error(err);
@@ -35,7 +35,7 @@ const Maintenance = () => {
     )
       return;
     try {
-      await axiosInstance.delete(`/api/maintenance/${id}`);
+      await apiClient.delete(`/maintenance/${id}`);
       fetchWindows();
     } catch (err) {
       console.error(err);
@@ -242,12 +242,76 @@ const Maintenance = () => {
                     </div>
                   </div>
                   <div
-                    style={{ color: "var(--text-secondary)", fontSize: "13px" }}
+                    style={{ color: "var(--text-secondary)", fontSize: "13px", marginBottom: "16px" }}
                   >
                     <strong>Recurrence:</strong>{" "}
                     <span style={{ textTransform: "capitalize" }}>
                       {win.recurringFrequency}
                     </span>
+                  </div>
+
+                  <div className="m-card-targets">
+                    {!(
+                      (win.monitors && win.monitors.length > 0) ||
+                      (win.syntheticMonitors && win.syntheticMonitors.length > 0) ||
+                      (win.apiMonitors && win.apiMonitors.length > 0) ||
+                      (win.heartbeats && win.heartbeats.length > 0)
+                    ) ? (
+                      <div className="m-target-warning">
+                        <span>⚠️ No targets selected (this maintenance window will not suppress any alerts).</span>
+                      </div>
+                    ) : (
+                      <div className="m-targets-list">
+                        {win.monitors && win.monitors.length > 0 && (
+                          <div className="m-target-category">
+                            <span className="m-target-cat-label">HTTP/TCP:</span>
+                            <div className="m-target-pills">
+                              {win.monitors.map((m) => (
+                                <span key={m._id} className="m-target-pill" title={m.url}>
+                                  {m.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {win.apiMonitors && win.apiMonitors.length > 0 && (
+                          <div className="m-target-category">
+                            <span className="m-target-cat-label">API:</span>
+                            <div className="m-target-pills">
+                              {win.apiMonitors.map((a) => (
+                                <span key={a._id} className="m-target-pill">
+                                  {a.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {win.syntheticMonitors && win.syntheticMonitors.length > 0 && (
+                          <div className="m-target-category">
+                            <span className="m-target-cat-label">Synthetic:</span>
+                            <div className="m-target-pills">
+                              {win.syntheticMonitors.map((s) => (
+                                <span key={s._id} className="m-target-pill">
+                                  {s.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {win.heartbeats && win.heartbeats.length > 0 && (
+                          <div className="m-target-category">
+                            <span className="m-target-cat-label">Heartbeat:</span>
+                            <div className="m-target-pills">
+                              {win.heartbeats.map((h) => (
+                                <span key={h._id} className="m-target-pill">
+                                  {h.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

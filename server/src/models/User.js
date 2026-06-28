@@ -44,6 +44,12 @@ const userSchema = new Schema(
       default: "Live status of our services.",
     },
     statusPageSlug: { type: String, unique: true, sparse: true },
+    statusPageShowUrl: { type: Boolean, default: true },
+    statusPageCandlePeriod: {
+      type: String,
+      enum: ["minutes", "day", "month"],
+      default: "minutes",
+    },
 
     themePreference: {
       type: String,

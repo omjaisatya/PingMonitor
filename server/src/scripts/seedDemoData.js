@@ -61,7 +61,7 @@ export const seedDemoData = async () => {
       name: "User Login Flow",
       isActive: true,
       interval: 60,
-      code: `const { test, expect } = require('@playwright/test');\ntest('login', async ({ page }) => {\n  await page.goto('https://example.com');\n  // Demo steps\n});`,
+      script: `const { test, expect } = require('@playwright/test');\ntest('login', async ({ page }) => {\n  await page.goto('https://example.com');\n  // Demo steps\n});`,
       timeout: 30000,
     });
 
@@ -73,13 +73,14 @@ export const seedDemoData = async () => {
       isActive: true,
       interval: 15,
       assertions: [
-        { source: "status", property: "", operator: "equals", target: "200" },
+        { type: "statusCode", property: "", operator: "equals", target: "200" },
       ],
     });
 
     await Heartbeat.create({
       userId: user._id,
       name: "Nightly Database Backup",
+      token: "backup-cron-demo-token",
       interval: "daily",
       gracePeriod: 30,
       isActive: true,

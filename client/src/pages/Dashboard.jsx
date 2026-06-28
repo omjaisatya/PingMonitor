@@ -249,19 +249,26 @@ export default function Dashboard() {
         {loading ? (
           <div className="monitors-grid">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="skeleton-card">
-                <div
-                  className="skeleton skeleton-title"
-                  style={{ width: "50%" }}
-                />
-                <div
-                  className="skeleton skeleton-text"
-                  style={{ width: "80%" }}
-                />
-                <div
-                  className="skeleton skeleton-text"
-                  style={{ width: "40%", marginTop: "auto" }}
-                />
+              <div key={i} className="monitor-card skeleton-card" style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: 'auto', minHeight: '230px' }}>
+                <div className="monitor-card-header" style={{ borderBottom: 'none', paddingBottom: 0, marginBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="monitor-card-header-left" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className="card-icon-wrapper skeleton" style={{ width: '28px', height: '28px', borderRadius: 'var(--radius-sm)' }} />
+                    <div className="skeleton" style={{ width: '60px', height: '14px' }} />
+                  </div>
+                  <span className="skeleton" style={{ width: '40px', height: '14px' }} />
+                </div>
+                <div className="monitor-card-body" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: 0 }}>
+                  <div className="skeleton skeleton-title" style={{ width: '70%', height: '20px', marginBottom: 0 }} />
+                  <div className="skeleton skeleton-text" style={{ width: '90%', height: '12px', marginBottom: 0 }} />
+                </div>
+                <div className="monitor-actions" style={{ marginTop: 'auto', display: 'flex', gap: '8px', padding: 0 }}>
+                  <div className="skeleton" style={{ width: '50px', height: '28px', borderRadius: 'var(--radius-sm)' }} />
+                  <div className="skeleton" style={{ width: '60px', height: '28px', borderRadius: 'var(--radius-sm)' }} />
+                  <div className="skeleton" style={{ width: '60px', height: '28px', borderRadius: 'var(--radius-sm)' }} />
+                </div>
+                <div className="monitor-card-footer" style={{ borderTop: 'none', paddingTop: 0, marginTop: 0, display: 'flex', alignItems: 'center' }}>
+                  <div className="skeleton" style={{ width: '80px', height: '14px' }} />
+                </div>
               </div>
             ))}
           </div>

@@ -31,6 +31,10 @@ const protect = async (req, res, next) => {
       });
     }
 
+    if (process.env.NODE_ENV === "development") {
+      user.isVerified = true;
+    }
+
     req.user = user;
     req.token = accessToken;
     next();

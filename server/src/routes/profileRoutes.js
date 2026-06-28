@@ -10,6 +10,7 @@ import {
   deleteAvatar,
   updateEmailReportSettings,
   sendTestEmailReport,
+  exportAllUserData,
 } from "../controllers/profileController.js";
 import protect from "../middlewares/authMid.js";
 import { csrfProtect } from "../middlewares/csrfMid.js";
@@ -29,5 +30,7 @@ router.post("/email-reports/test", protect, csrfProtect, sendTestEmailReport);
 
 router.post("/avatar", protect, csrfProtect, uploadMiddleware, uploadAvatar);
 router.delete("/avatar", protect, csrfProtect, deleteAvatar);
+
+router.get("/export", protect, csrfProtect, exportAllUserData);
 
 export default router;

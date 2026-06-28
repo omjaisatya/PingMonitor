@@ -321,7 +321,7 @@
   margin: 0;
 }
 
-.btn {
+.profile-page .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -342,71 +342,71 @@
   white-space: nowrap;
 }
 
-.btn:disabled {
+.profile-page .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-.btn:not(:disabled):active {
+.profile-page .btn:not(:disabled):active {
   transform: scale(0.98);
 }
 
-.btn-primary {
+.profile-page .btn-primary {
   background: var(--green, #1d9e75);
   color: #fff;
 }
 
-.btn-primary:not(:disabled):hover {
+.profile-page .btn-primary:not(:disabled):hover {
   background: #178562;
 }
 
-.btn-warning {
+.profile-page .btn-warning {
   background: rgba(239, 159, 39, 0.08);
   color: #ef9f27;
   border-color: rgba(239, 159, 39, 0.2);
 }
 
-.btn-warning:not(:disabled):hover {
+.profile-page .btn-warning:not(:disabled):hover {
   background: rgba(239, 159, 39, 0.16);
   border-color: rgba(239, 159, 39, 0.3);
 }
 
-.btn-danger {
+.profile-page .btn-danger {
   background: rgba(226, 75, 74, 0.08);
   color: #e24b4a;
   border-color: rgba(226, 75, 74, 0.2);
 }
 
-.btn-danger:not(:disabled):hover {
+.profile-page .btn-danger:not(:disabled):hover {
   background: rgba(226, 75, 74, 0.16);
   border-color: rgba(226, 75, 74, 0.3);
 }
 
-.btn-ghost {
+.profile-page .btn-ghost {
   background: transparent;
   color: var(--text-secondary, #aaa);
   border-color: var(--border, #2a2a2a);
 }
 
-.btn-ghost:hover {
+.profile-page .btn-ghost:hover {
   color: var(--text-primary);
   border-color: #444;
   background: rgba(255, 255, 255, 0.02);
 }
 
-.btn-success-pills {
+.profile-page .btn-success-pills {
   background: rgba(29, 158, 117, 0.1);
   color: #1d9e75;
   border-color: rgba(29, 158, 117, 0.25);
 }
 
-.btn-sm {
+.profile-page .btn-sm {
   padding: 6px 12px;
   font-size: 12px;
   border-radius: 6px;
 }
 
-.btn-xs {
+.profile-page .btn-xs {
   padding: 4px 8px;
   font-size: 11px;
   border-radius: 4px;
@@ -630,7 +630,7 @@
   gap: 6px;
 }
 
-.modal-backdrop {
+.profile-page .modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
@@ -652,7 +652,7 @@
   }
 }
 
-.modal {
+.profile-page .modal {
   background: var(--bg-card, #141414);
   border: 1px solid var(--border, #2a2a2a);
   border-radius: 14px;
@@ -676,21 +676,21 @@
   }
 }
 
-.modal__title {
+.profile-page .modal__title {
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
 }
 
-.modal__message {
+.profile-page .modal__message {
   font-size: 14px;
   color: var(--text-muted, #888);
   line-height: 1.6;
   margin: 0;
 }
 
-.modal__actions {
+.profile-page .modal__actions {
   display: flex;
   gap: 10px;
   justify-content: flex-end;

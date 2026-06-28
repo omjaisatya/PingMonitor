@@ -88,10 +88,10 @@ export const aggregateRegionalCheck = async (checkGroupId) => {
     failedRegions.length >= majorityNeeded ? "down" : "up";
   const previousStatus = monitor.status;
   const avgResponseTime = averageLatency(results);
-  const representativeStatusCode =
-    results.find((result) => result.status === quorumStatus)?.statusCode ||
-    results[0].statusCode ||
-    null;
+  const representativeResult = results.find((result) => result.status === quorumStatus);
+  const representativeStatusCode = representativeResult !== undefined
+    ? representativeResult.statusCode
+    : (results[0] ? results[0].statusCode : null);
 
   const quorum = {
     passed: quorumStatus === "up",
@@ -107,6 +107,7 @@ export const aggregateRegionalCheck = async (checkGroupId) => {
     responseTime: avgResponseTime,
     region: "quorum",
     checkGroupId,
+    timestamp: results[0]?.checkedAt || new Date(),
     quorum,
   });
 

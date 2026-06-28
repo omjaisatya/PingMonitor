@@ -75,6 +75,7 @@ export const dispatchSyntheticNotifications = async (
       try {
         await InAppNotification.create({
           userId: monitor.userId,
+          monitorId: monitor._id,
           message,
           status: eventType === "down" ? "down" : "up",
         });

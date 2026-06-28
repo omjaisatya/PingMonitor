@@ -77,12 +77,14 @@ const serializeUser = (user) => ({
   id: user._id,
   name: user.name,
   email: user.email,
-  isVerified: user.isVerified,
+  isVerified: process.env.NODE_ENV === "development" ? true : user.isVerified,
   createdAt: user.createdAt,
   statusPageEnabled: user.statusPageEnabled,
   statusPageTitle: user.statusPageTitle,
   statusPageDescription: user.statusPageDescription,
   statusPageSlug: user.statusPageSlug,
+  statusPageShowUrl: user.statusPageShowUrl !== undefined ? user.statusPageShowUrl : true,
+  statusPageCandlePeriod: user.statusPageCandlePeriod || "minutes",
   themePreference: user.themePreference || "dark",
 });
 
@@ -120,7 +122,7 @@ const signup = async (req, res) => {
       name,
       email,
       password: hashPass,
-      isVerified: false,
+      isVerified: process.env.NODE_ENV === "development",
     });
 
     const { accessToken, refreshToken } = generateTokenPair(newUser._id);

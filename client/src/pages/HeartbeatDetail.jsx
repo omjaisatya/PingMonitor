@@ -13,7 +13,10 @@ import {
   FiActivity,
   FiCopy,
   FiCheck,
+  FiServer,
+  FiAlertTriangle,
 } from "react-icons/fi";
+import { FaHeart, FaHeartBroken } from "react-icons/fa";
 import "../styles/Heartbeats.css";
 
 export default function HeartbeatDetail() {
@@ -121,7 +124,7 @@ export default function HeartbeatDetail() {
 
   if (!heartbeat) return null;
 
-  const pingUrl = `${import.meta.env.VITE_SERVER_URL}/api/public/heartbeat/ping/${heartbeat.token}`;
+  const pingUrl = `${import.meta.env.VITE_SERVER_URL}/public/heartbeat/ping/${heartbeat.token}`;
 
   const curlCommand = `curl -m 10 --retry 5 "${pingUrl}"`;
   const pythonSnippet = `import urllib.request\ntry:\n    urllib.request.urlopen("${pingUrl}", timeout=10)\nexcept Exception as e:\n    print(f"Failed: {e}")`;
@@ -144,31 +147,32 @@ export default function HeartbeatDetail() {
       <Navbar />
 
       <main className="main-content">
-        <div style={{ marginBottom: "24px" }}>
-          <Link
-            to="/heartbeats"
-            className="btn btn-ghost btn-sm"
-            style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
-          >
-            <FiArrowLeft /> Back to Heartbeats
-          </Link>
-        </div>
+        <Link
+          to="/heartbeats"
+          className="back-link"
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px", marginBottom: "24px" }}
+        >
+          <FiArrowLeft /> Heartbeats
+        </Link>
 
-        <div className="dashboard-header" style={{ marginBottom: "32px" }}>
-          <div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                marginBottom: "8px",
-              }}
-            >
+        <div className="detail-header">
+          <div className="detail-header-left">
+            <div className="detail-title-row">
+              {heartbeat.isActive ? (
+                heartbeat.status === "up" ? (
+                  <FaHeart className="heart-icon heart-icon--live heart-icon--large" />
+                ) : (
+                  <FaHeartBroken className="heart-icon heart-icon--broken heart-icon--large" />
+                )
+              ) : (
+                <FaHeart className="heart-icon heart-icon--paused heart-icon--large" />
+              )}
               <h1 className="page-title" style={{ margin: 0 }}>
                 {heartbeat.name}
               </h1>
               <span
                 className={`badge-status badge-status--${heartbeat.isActive ? heartbeat.status : "unknown"}`}
+                style={{ alignSelf: "center", transform: "translateY(2px)" }}
               >
                 {heartbeat.isActive ? heartbeat.status : "PAUSED"}
               </span>
@@ -179,6 +183,7 @@ export default function HeartbeatDetail() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "6px",
+                marginTop: "4px",
               }}
             >
               <FiClock /> Expected every {heartbeat.interval} (+{" "}
@@ -188,20 +193,28 @@ export default function HeartbeatDetail() {
         </div>
 
         <div className="stats-grid" style={{ marginBottom: "32px" }}>
-          <div className="stat-card">
-            <div className="stat-label">Uptime Percentage</div>
+          <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div className="stat-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <FiServer size={14} style={{ color: "var(--accent)" }} /> Uptime Percentage
+            </div>
             <div className="stat-value green">{uptimePercentage}%</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-label">Total Check-ins</div>
+          <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div className="stat-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <FiActivity size={14} style={{ color: "var(--accent)" }} /> Total Check-ins
+            </div>
             <div className="stat-value">{heartbeat.pingCount}</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-label">Missed Checks</div>
+          <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div className="stat-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <FiAlertTriangle size={14} style={{ color: "var(--accent)" }} /> Missed Checks
+            </div>
             <div className="stat-value red">{heartbeat.consecutiveMissed}</div>
           </div>
-          <div className="stat-card">
-            <div className="stat-label">Last Successful Ping</div>
+          <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+            <div className="stat-label" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <FiClock size={14} style={{ color: "var(--accent)" }} /> Last Successful Ping
+            </div>
             <div
               className="stat-value"
               style={{ fontSize: "16px", paddingTop: "8px" }}
@@ -213,19 +226,13 @@ export default function HeartbeatDetail() {
           </div>
         </div>
 
-        <div className="profile-section" style={{ marginBottom: "32px" }}>
-          <div className="profile-section__header">
-            <span className="profile-section__icon">
-              <FiActivity />
-            </span>
-            <div>
-              <h3 className="profile-section__title">Availability History</h3>
-              <p className="profile-section__subtitle">
-                Uptime tracking of the last 30 checks
-              </p>
-            </div>
+        <div className="detail-section" style={{ marginBottom: "32px" }}>
+          <div className="section-header-row" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+            <h2 className="section-title" style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+              <FiActivity size={18} /> Availability History
+            </h2>
           </div>
-          <div className="profile-section__body">
+          <div className="section-body">
             <div className="history-timeline">
               {timelineBlocks.map((status, index) => (
                 <div
@@ -259,20 +266,14 @@ export default function HeartbeatDetail() {
           <div
             style={{ display: "flex", flexDirection: "column", gap: "32px" }}
           >
-            <div className="profile-section">
-              <div className="profile-section__header">
-                <span className="profile-section__icon">
-                  <FiTerminal />
-                </span>
-                <div>
-                  <h3 className="profile-section__title">Integration Guide</h3>
-                  <p className="profile-section__subtitle">
-                    Pings can be sent via simple GET/POST HTTP requests
-                  </p>
-                </div>
+            <div className="detail-section">
+              <div className="section-header-row" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+                <h2 className="section-title" style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <FiTerminal /> Integration Guide
+                </h2>
               </div>
               <div
-                className="profile-section__body"
+                className="section-body"
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -306,7 +307,7 @@ export default function HeartbeatDetail() {
                   </button>
                 </div>
 
-                <div className="integration-box">
+                <div className="integration-box" style={{ background: "var(--bg-input)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "16px", marginTop: "12px" }}>
                   <h4
                     style={{
                       margin: "0 0 8px 0",
@@ -319,13 +320,13 @@ export default function HeartbeatDetail() {
                   <div className="code-block">
                     * * * * * /path/to/my-script.sh && {curlCommand}
                   </div>
-                  <span className="profile-field__hint">
+                  <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px", display: "block" }}>
                     This executes your custom script and triggers check-in on
                     success.
                   </span>
                 </div>
 
-                <div className="integration-box">
+                <div className="integration-box" style={{ background: "var(--bg-input)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "16px" }}>
                   <h4
                     style={{
                       margin: "0 0 8px 0",
@@ -345,86 +346,44 @@ export default function HeartbeatDetail() {
               </div>
             </div>
 
-            <div className="profile-section">
-              <div className="profile-section__header">
-                <span className="profile-section__icon">
-                  <FiGlobe />
-                </span>
-                <div>
-                  <h3 className="profile-section__title">
-                    Recent check-in logs
-                  </h3>
-                  <p className="profile-section__subtitle">
-                    Audit logs of the last check-ins from your client systems
-                  </p>
-                </div>
+            <div className="detail-section">
+              <div className="section-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h2 className="section-title" style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <FiGlobe /> Recent check-in logs
+                </h2>
               </div>
-              <div className="profile-section__body" style={{ padding: 0 }}>
+              <div className="section-body" style={{ padding: 0 }}>
                 {logs.length === 0 ? (
-                  <div
-                    style={{
-                      padding: "24px",
-                      textAlign: "center",
-                      color: "var(--text-muted)",
-                    }}
-                  >
+                  <div className="empty-state" style={{ padding: "32px" }}>
                     No check-in logs recorded yet.
                   </div>
                 ) : (
-                  <div style={{ overflowX: "auto" }}>
-                    <table
-                      style={{
-                        width: "100%",
-                        borderCollapse: "collapse",
-                        fontSize: "13.5px",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
+                  <div className="table-wrapper">
+                    <table>
                       <thead>
-                        <tr
-                          style={{
-                            background: "rgba(255,255,255,0.02)",
-                            borderBottom: "1px solid var(--border)",
-                            textAlign: "left",
-                          }}
-                        >
-                          <th style={{ padding: "12px 16px" }}>Status</th>
-                          <th style={{ padding: "12px 16px" }}>Time</th>
-                          <th style={{ padding: "12px 16px" }}>IP Source</th>
-                          <th style={{ padding: "12px 16px" }}>User Agent</th>
+                        <tr>
+                          <th>Status</th>
+                          <th>Time</th>
+                          <th>IP Source</th>
+                          <th>User Agent</th>
                         </tr>
                       </thead>
                       <tbody>
                         {logs.map((log) => (
-                          <tr
-                            key={log._id}
-                            style={{
-                              borderBottom: "1px solid rgba(255,255,255,0.02)",
-                            }}
-                          >
-                            <td style={{ padding: "12px 16px" }}>
-                              <span
-                                className={`badge-status badge-status--${log.status}`}
-                                style={{ fontSize: "10px" }}
-                              >
+                          <tr key={log._id}>
+                            <td>
+                              <span className={`badge-status badge-status--${log.status}`}>
                                 {log.status}
                               </span>
                             </td>
-                            <td style={{ padding: "12px 16px" }}>
+                            <td>
                               {new Date(log.timestamp).toLocaleString()}
                             </td>
-                            <td
-                              style={{
-                                padding: "12px 16px",
-                                fontFamily: "var(--font-mono)",
-                                fontSize: "12px",
-                              }}
-                            >
+                            <td className="mono" style={{ fontSize: "12px" }}>
                               {log.ip || "unknown"}
                             </td>
                             <td
                               style={{
-                                padding: "12px 16px",
                                 maxWidth: "200px",
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
@@ -445,39 +404,32 @@ export default function HeartbeatDetail() {
           </div>
 
           <div>
-            <div className="profile-section">
-              <div className="profile-section__header">
-                <span className="profile-section__icon">
-                  <FiSettings />
-                </span>
-                <div>
-                  <h3 className="profile-section__title">Settings</h3>
-                  <p className="profile-section__subtitle">
-                    Configure intervals and alerts
-                  </p>
-                </div>
+            <div className="detail-section">
+              <div className="section-header-row" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+                <h2 className="section-title" style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                  <FiSettings /> Settings
+                </h2>
               </div>
-              <div className="profile-section__body">
-                <form onSubmit={handleSaveSettings} className="form-layout">
-                  <div className="profile-field">
-                    <label className="profile-field__label">Monitor Name</label>
+              <div className="section-body">
+                <form onSubmit={handleSaveSettings} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  <div className="form-group">
+                    <label className="form-label">Monitor Name</label>
                     <input
                       type="text"
-                      className="profile-input"
+                      className="form-input"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
                     />
                   </div>
 
-                  <div className="profile-field">
-                    <label className="profile-field__label">
-                      Expected Interval
-                    </label>
+                  <div className="form-group">
+                    <label className="form-label">Expected Interval</label>
                     <select
-                      className="profile-input"
+                      className="form-input"
                       value={interval}
                       onChange={(e) => setInterval(e.target.value)}
+                      style={{ backgroundPosition: "right 12px center" }}
                     >
                       <option value="1min">1 Minute</option>
                       <option value="5min">5 Minutes</option>
@@ -487,90 +439,66 @@ export default function HeartbeatDetail() {
                     </select>
                   </div>
 
-                  <div className="profile-field">
-                    <label className="profile-field__label">
-                      Grace Period (Minutes)
-                    </label>
+                  <div className="form-group">
+                    <label className="form-label">Grace Period (Minutes)</label>
                     <input
                       type="number"
                       min="1"
-                      className="profile-input"
+                      className="form-input"
                       value={gracePeriod}
                       onChange={(e) => setGracePeriod(e.target.value)}
                     />
                   </div>
 
-                  <div className="profile-field">
-                    <label className="profile-field__label">
-                      Alert Channels
-                    </label>
+                  <div className="form-group">
+                    <label className="form-label">Alert Channels</label>
                     <div
                       style={{
                         display: "flex",
                         flexDirection: "column",
-                        gap: "8px",
-                        marginTop: "4px",
+                        gap: "12px",
+                        marginTop: "8px",
                       }}
                     >
-                      <label
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          fontSize: "13px",
-                          cursor: "pointer",
-                        }}
-                      >
+                      <label className="switch-label">
                         <input
                           type="checkbox"
+                          className="switch-input"
                           checked={emailAlert}
                           onChange={(e) => setEmailAlert(e.target.checked)}
                         />
-                        Notify by Email
+                        <span className="switch-slider" />
+                        <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Notify by Email</span>
                       </label>
-                      <label
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          fontSize: "13px",
-                          cursor: "pointer",
-                        }}
-                      >
+                      <label className="switch-label">
                         <input
                           type="checkbox"
+                          className="switch-input"
                           checked={inAppAlert}
                           onChange={(e) => setInAppAlert(e.target.checked)}
                         />
-                        Notify in app
+                        <span className="switch-slider" />
+                        <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Notify in app</span>
                       </label>
-                      <label
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          fontSize: "13px",
-                          cursor: "pointer",
-                        }}
-                      >
+                      <label className="switch-label">
                         <input
                           type="checkbox"
+                          className="switch-input"
                           checked={webhookAlert}
                           onChange={(e) => setWebhookAlert(e.target.checked)}
                         />
-                        Send Webhook Request
+                        <span className="switch-slider" />
+                        <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Send Webhook Request</span>
                       </label>
                     </div>
                   </div>
 
                   {webhookAlert && (
-                    <div className="profile-field">
-                      <label className="profile-field__label">
-                        Webhook Endpoint URL
-                      </label>
+                    <div className="form-group" style={{ animation: "fadeIn 0.2s ease" }}>
+                      <label className="form-label">Webhook Endpoint URL</label>
                       <input
                         type="url"
-                        className="profile-input"
+                        className="form-input"
                         value={webhookUrl}
                         onChange={(e) => setWebhookUrl(e.target.value)}
                         placeholder="https://yourserver.com/alerts/webhook"
@@ -579,18 +507,16 @@ export default function HeartbeatDetail() {
                     </div>
                   )}
 
-                  <div className="profile-field">
-                    <label className="profile-field__label">
-                      Escalation Emails
-                    </label>
+                  <div className="form-group">
+                    <label className="form-label">Escalation Emails</label>
                     <input
                       type="text"
-                      className="profile-input"
+                      className="form-input"
                       value={escalationEmails}
                       onChange={(e) => setEscalationEmails(e.target.value)}
                       placeholder="admin@mycorp.com, alerts@mycorp.com"
                     />
-                    <span className="profile-field__hint">
+                    <span style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px", display: "block" }}>
                       Comma separated emails to notify.
                     </span>
                   </div>

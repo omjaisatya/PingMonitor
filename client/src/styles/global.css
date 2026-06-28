@@ -152,23 +152,6 @@ body {
   overflow-x: hidden;
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(102, 85, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(102, 85, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-:root[data-theme="light"] body::before {
-  background-image:
-    linear-gradient(rgba(85, 72, 217, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(85, 72, 217, 0.055) 1px, transparent 1px);
-}
 
 #root {
   position: relative;
@@ -1072,23 +1055,37 @@ tbody tr:hover {
 
 @keyframes skeleton-pulse {
   0% {
-    background-color: var(--border);
-    opacity: 0.6;
+    background-color: rgba(255, 255, 255, 0.05);
   }
   50% {
-    background-color: var(--border-light);
-    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.12);
   }
   100% {
-    background-color: var(--border);
-    opacity: 0.6;
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}
+
+@keyframes skeleton-pulse-light {
+  0% {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  50% {
+    background-color: rgba(0, 0, 0, 0.12);
+  }
+  100% {
+    background-color: rgba(0, 0, 0, 0.05);
   }
 }
 
 .skeleton {
   animation: skeleton-pulse 1.5s infinite ease-in-out;
-  background-color: var(--border);
+  background-color: rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-md);
+}
+
+:root[data-theme="light"] .skeleton {
+  animation: skeleton-pulse-light 1.5s infinite ease-in-out;
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .skeleton-text {
