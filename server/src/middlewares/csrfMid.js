@@ -1,4 +1,9 @@
 export const csrfProtect = (req, res, next) => {
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  if (authHeader && authHeader.startsWith("Bearer")) {
+    return next();
+  }
+
   const tokenFromCookie = req.cookies.pm_csrf_token;
   const tokenFromHeader = req.headers["x-csrf-token"];
 

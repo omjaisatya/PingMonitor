@@ -78,7 +78,19 @@ export const AuthProvider = ({ children }) => {
           "AuthProvider failed to parse cached session payload ->",
           err,
         );
-        clearSession();
+        const isPublicRoute = (pathname) => {
+          return (
+            pathname.startsWith("/status/") ||
+            pathname === "/login" ||
+            pathname === "/register"
+          );
+        };
+        if (isPublicRoute(window.location.pathname)) {
+          setCurrentUser(null);
+          setIsAuthenticated(false);
+        } else {
+          clearSession();
+        }
       } finally {
         setIsSessionResolving(false);
       }

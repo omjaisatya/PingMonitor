@@ -1,4 +1,3 @@
-// hook/useSessionSecurity.js
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "../context/ToastContext";
@@ -10,6 +9,18 @@ export const useSessionSecurity = () => {
 
   useEffect(() => {
     const handleCompromised = async (e) => {
+      const isPublicRoute = (pathname) => {
+        return (
+          pathname.startsWith("/status/") ||
+          pathname === "/login" ||
+          pathname === "/register"
+        );
+      };
+
+      if (isPublicRoute(window.location.pathname)) {
+        return;
+      }
+
       const reason = e.detail?.reason;
 
       if (reason === "refresh_token_reuse") {

@@ -82,7 +82,7 @@ const Maintenance = () => {
             </p>
           </div>
           <button
-            className="btn-primary"
+            className="btn btn-primary"
             onClick={() => setIsModalOpen(true)}
             style={{ display: "flex", alignItems: "center", gap: "8px" }}
           >

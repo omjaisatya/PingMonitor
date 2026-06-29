@@ -31,6 +31,14 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+const isPublicRoute = (pathname) => {
+  return (
+    pathname.startsWith("/status/") ||
+    pathname === "/login" ||
+    pathname === "/register"
+  );
+};
+
 apiClient.interceptors.request.use((reqConfig) => {
   const activeJwt = getAccessToken();
   if (activeJwt) {
@@ -57,16 +65,19 @@ apiClient.interceptors.response.use(
       status === 401 &&
       errorMessage.toLowerCase().includes("reuse detected")
     ) {
-      clearAuthStorage();
-      clearCsrfToken();
+      if (!isPublicRoute(window.location.pathname)) {
+        clearAuthStorage();
+        clearCsrfToken();
+      }
       processQueue(error, null);
 
-      // dispatch a custom event so AuthProvider can react without tight coupling
-      window.dispatchEvent(
-        new CustomEvent("auth:session-compromised", {
-          detail: { reason: "refresh_token_reuse" },
-        }),
-      );
+      if (!isPublicRoute(window.location.pathname)) {
+        window.dispatchEvent(
+          new CustomEvent("auth:session-compromised", {
+            detail: { reason: "refresh_token_reuse" },
+          }),
+        );
+      }
 
       return Promise.reject(error);
     }
@@ -77,27 +88,31 @@ apiClient.interceptors.response.use(
     }
 
     if (status === 403 && errorMessage.toLowerCase().includes("csrf")) {
-      clearAuthStorage();
-      clearCsrfToken();
+      if (!isPublicRoute(window.location.pathname)) {
+        clearAuthStorage();
+        clearCsrfToken();
 
-      window.dispatchEvent(
-        new CustomEvent("auth:session-compromised", {
-          detail: { reason: "session_expired" },
-        }),
-      );
+        window.dispatchEvent(
+          new CustomEvent("auth:session-compromised", {
+            detail: { reason: "session_expired" },
+          }),
+        );
+      }
 
       return Promise.reject(error);
     }
 
     if (error.response?.status === 401) {
       if (originalRequest._retry || originalRequest.skipAuthRefresh) {
-        clearAuthStorage();
-        clearCsrfToken();
-        window.dispatchEvent(
-          new CustomEvent("auth:session-compromised", {
-            detail: { reason: "session_expired" },
-          }),
-        );
+        if (!isPublicRoute(window.location.pathname)) {
+          clearAuthStorage();
+          clearCsrfToken();
+          window.dispatchEvent(
+            new CustomEvent("auth:session-compromised", {
+              detail: { reason: "session_expired" },
+            }),
+          );
+        }
         return Promise.reject(error);
       }
 
@@ -139,15 +154,19 @@ apiClient.interceptors.response.use(
 
         return apiClient(originalRequest);
       } catch (refreshError) {
-        clearAuthStorage();
-        clearCsrfToken();
-        processQueue(refreshError, null);
+        if (!isPublicRoute(window.location.pathname)) {
+          clearAuthStorage();
+          clearCsrfToken();
+          processQueue(refreshError, null);
 
-        window.dispatchEvent(
-          new CustomEvent("auth:session-compromised", {
-            detail: { reason: "session_expired" },
-          }),
-        );
+          window.dispatchEvent(
+            new CustomEvent("auth:session-compromised", {
+              detail: { reason: "session_expired" },
+            }),
+          );
+        } else {
+          processQueue(refreshError, null);
+        }
 
         return Promise.reject(refreshError);
       } finally {
