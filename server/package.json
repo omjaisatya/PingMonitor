@@ -10,7 +10,8 @@
     "dev": "cross-env NODE_ENV=development nodemon server.js",
     "worker:region": "node src/workers/regionalWorker.js",
     "deploy:test": "cross-env NODE_ENV=test node server.js",
-    "db:seed": "node src/scripts/runSeed.js"
+    "db:seed": "node src/scripts/runSeed.js",
+    "postinstall": "npx playwright install chromium"
   },
   "keywords": [
     "saas",

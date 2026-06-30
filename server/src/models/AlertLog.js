@@ -11,7 +11,7 @@ const alertLogSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["up", "down", "slow"],
+      enum: ["up", "down", "slow", "recovered"],
       required: true,
     },
     statusCode: {

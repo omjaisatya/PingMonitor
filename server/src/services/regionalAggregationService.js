@@ -62,7 +62,7 @@ export const storeRegionalResult = async (payload) => {
       checkedAt: payload.checkedAt ? new Date(payload.checkedAt) : new Date(),
       workerId: payload.workerId || "",
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
   );
 
   return result;

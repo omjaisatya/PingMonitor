@@ -213,7 +213,7 @@ export const updateSyntheticMonitor = async (req, res) => {
         userId: req.user._id,
       },
       updateObj,
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     if (!synthetic) {

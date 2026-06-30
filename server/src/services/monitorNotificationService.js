@@ -238,7 +238,7 @@ export const updateDailyStats = async (
     await MonitorStats.findOneAndUpdate(
       { monitorId, date: today },
       updateObj,
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     );
   } catch (err) {
     console.error("Failed to update daily stats:", err);
