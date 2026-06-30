@@ -1,6 +1,9 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
+import Session from "../models/Session.js";
+import { parseUserAgent, getIpLocation } from "../utils/deviceDetector.js";
 import {
   generateTokenPair,
   hashToken,
@@ -83,7 +86,8 @@ const serializeUser = (user) => ({
   statusPageTitle: user.statusPageTitle,
   statusPageDescription: user.statusPageDescription,
   statusPageSlug: user.statusPageSlug,
-  statusPageShowUrl: user.statusPageShowUrl !== undefined ? user.statusPageShowUrl : true,
+  statusPageShowUrl:
+    user.statusPageShowUrl !== undefined ? user.statusPageShowUrl : true,
   statusPageCandlePeriod: user.statusPageCandlePeriod || "minutes",
   themePreference: user.themePreference || "dark",
   avatar: user.avatar,
@@ -126,7 +130,11 @@ const signup = async (req, res) => {
       isVerified: process.env.NODE_ENV === "development",
     });
 
-    const { accessToken, refreshToken } = generateTokenPair(newUser._id);
+    const sessionId = new mongoose.Types.ObjectId();
+    const { accessToken, refreshToken } = generateTokenPair(
+      newUser._id,
+      sessionId,
+    );
 
     newUser.refreshTokenHash = hashToken(refreshToken);
     try {
@@ -135,6 +143,30 @@ const signup = async (req, res) => {
       console.error("Failed to send verification email:", emailError.message);
       await newUser.save();
     }
+
+    const ua = req.headers["user-agent"] || "";
+    const { device, browser, operatingSystem } = parseUserAgent(ua);
+    const ip =
+      req.ip ||
+      req.headers["x-forwarded-for"] ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    const location = await getIpLocation(ip);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await Session.create({
+      _id: sessionId,
+      userId: newUser._id,
+      refreshTokenHash: hashToken(refreshToken),
+      device,
+      browser,
+      operatingSystem,
+      ipAddress: ip,
+      location,
+      userAgent: ua,
+      expiresAt,
+      status: "active",
+    });
 
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, refreshCookieOptions());
     const csrfToken = setCsrfCookie(res);
@@ -200,9 +232,37 @@ const login = async (req, res) => {
       user.deactivatedAt = null;
     }
 
-    const { refreshToken, accessToken } = generateTokenPair(user._id);
+    const sessionId = new mongoose.Types.ObjectId();
+    const { refreshToken, accessToken } = generateTokenPair(
+      user._id,
+      sessionId,
+    );
     user.refreshTokenHash = hashToken(refreshToken);
     await user.save();
+
+    const ua = req.headers["user-agent"] || "";
+    const { device, browser, operatingSystem } = parseUserAgent(ua);
+    const ip =
+      req.ip ||
+      req.headers["x-forwarded-for"] ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    const location = await getIpLocation(ip);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await Session.create({
+      _id: sessionId,
+      userId: user._id,
+      refreshTokenHash: hashToken(refreshToken),
+      device,
+      browser,
+      operatingSystem,
+      ipAddress: ip,
+      location,
+      userAgent: ua,
+      expiresAt,
+      status: "active",
+    });
 
     res.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, refreshCookieOptions());
     const csrfToken = setCsrfCookie(res);
@@ -247,17 +307,73 @@ const refreshTokenEP = async (req, res) => {
 
     const incomingHash = hashToken(refreshToken);
     if (user.refreshTokenHash !== incomingHash) {
+      if (decoded.sessionId) {
+        await Session.findByIdAndUpdate(decoded.sessionId, {
+          status: "revoked",
+        });
+      } else {
+        await Session.findOneAndUpdate(
+          { refreshTokenHash: incomingHash },
+          { status: "revoked" },
+        );
+      }
       user.refreshTokenHash = null;
       await user.save();
       clearRefreshCookie(res);
       return res.status(401).json({ message: "Refresh token reuse detected" });
     }
 
+    let session = null;
+    if (decoded.sessionId) {
+      session = await Session.findById(decoded.sessionId);
+    } else {
+      session = await Session.findOne({ refreshTokenHash: incomingHash });
+    }
+
+    if (
+      !session ||
+      session.status !== "active" ||
+      session.expiresAt < new Date()
+    ) {
+      if (session && session.status === "active") {
+        session.status = "expired";
+        await session.save();
+      }
+      user.refreshTokenHash = null;
+      await user.save();
+      clearRefreshCookie(res);
+      return res.status(401).json({ message: "Session expired or revoked" });
+    }
+
+    const sessionId = session._id;
     const { accessToken, refreshToken: newRefreshToken } = generateTokenPair(
       user._id,
+      sessionId,
     );
+
     user.refreshTokenHash = hashToken(newRefreshToken);
     await user.save();
+
+    const ua = req.headers["user-agent"] || "";
+    const { device, browser, operatingSystem } = parseUserAgent(ua);
+    const ip =
+      req.ip ||
+      req.headers["x-forwarded-for"] ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    const location = await getIpLocation(ip);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    session.refreshTokenHash = hashToken(newRefreshToken);
+    session.expiresAt = expiresAt;
+    session.lastActivity = new Date();
+    session.device = device;
+    session.browser = browser;
+    session.operatingSystem = operatingSystem;
+    session.ipAddress = ip;
+    session.location = location;
+    session.userAgent = ua;
+    await session.save();
 
     res.cookie(
       REFRESH_TOKEN_COOKIE_NAME,
@@ -284,6 +400,14 @@ const logout = async (req, res) => {
   try {
     if (req.token) {
       blacklistToken(req.token);
+    }
+
+    if (req.sessionId) {
+      await Session.findByIdAndUpdate(req.sessionId, {
+        status: "logged_out",
+        logoutAt: new Date(),
+        refreshTokenHash: "logged_out_" + Date.now(),
+      });
     }
 
     if (req.user) {
@@ -339,7 +463,9 @@ const resetPassword = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ message: "Reset link is invalid or expired" });
+      return res
+        .status(400)
+        .json({ message: "Reset link is invalid or expired" });
     }
 
     user.password = await bcrypt.hash(password, 12);
@@ -361,7 +487,9 @@ const verifyEmail = async (req, res) => {
   try {
     const { token } = req.body;
     if (!token) {
-      return res.status(400).json({ message: "Verification token is required" });
+      return res
+        .status(400)
+        .json({ message: "Verification token is required" });
     }
 
     const user = await User.findOne({
