@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import { verifyAccessToken } from "../../utils/tokenCofig.js";
 import { isTokenBlacklisted } from "../../utils/tokenBlacklist.js";
+import Session from "../models/Session.js";
 
 const protect = async (req, res, next) => {
   try {
@@ -17,6 +18,37 @@ const protect = async (req, res, next) => {
     }
 
     const decoded = verifyAccessToken(accessToken);
+
+    if (decoded.sessionId) {
+      const session = await Session.findById(decoded.sessionId);
+      if (
+        !session ||
+        session.status !== "active" ||
+        session.expiresAt < new Date()
+      ) {
+        if (session && session.status === "active") {
+          session.status = "expired";
+          await session
+            .save()
+            .catch((err) =>
+              console.error("Error setting session to expired:", err),
+            );
+        }
+        return res.status(401).json({
+          message:
+            "Your session has expired or has been revoked. Please sign in again.",
+          code: "SESSION_REVOKED",
+        });
+      }
+
+      Session.findByIdAndUpdate(decoded.sessionId, {
+        lastActivity: new Date(),
+      }).catch((err) => {
+        console.error("Error updating lastActivity for session:", err.message);
+      });
+
+      req.sessionId = decoded.sessionId;
+    }
 
     const user = await User.findById(decoded.id).select("-password");
 

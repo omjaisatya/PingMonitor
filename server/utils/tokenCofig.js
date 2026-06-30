@@ -10,12 +10,17 @@ import crypto from "crypto";
 export const hashToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
-export const generateTokenPair = (userId) => {
-  const accessToken = jwt.sign({ id: userId }, JWT_SECRET, {
+export const generateTokenPair = (userId, sessionId = null) => {
+  const payload = { id: userId };
+  if (sessionId) {
+    payload.sessionId = sessionId;
+  }
+
+  const accessToken = jwt.sign(payload, JWT_SECRET, {
     expiresIn: ACCESS_TOKEN_EXPIRY,
   });
 
-  const refreshToken = jwt.sign({ id: userId }, JWT_REFRESH_SECRET, {
+  const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, {
     expiresIn: REFRESH_TOKEN_EXPIRY,
   });
 

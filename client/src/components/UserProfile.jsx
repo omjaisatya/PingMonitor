@@ -5,6 +5,7 @@ import apiClient from "../api/axios";
 import "../styles/UserProfile.css";
 import Navbar from "./Navbar";
 import Avatar from "./Avatar";
+import SessionManager from "./SessionManager";
 import {
   FiUser,
   FiShield,
@@ -70,7 +71,7 @@ const PasswordStrengthBar = ({ password }) => {
   );
 };
 
-const SectionCard = ({ title, subtitle, icon, children, danger }) => (
+export const SectionCard = ({ title, subtitle, icon, children, danger }) => (
   <div className={`profile-section ${danger ? "profile-section--danger" : ""}`}>
     <div className="profile-section__header">
       <span className="profile-section__icon">{icon}</span>
@@ -120,7 +121,7 @@ const PasswordInput = ({ id, value, onChange, placeholder, autoComplete }) => {
   );
 };
 
-const ConfirmModal = ({
+export const ConfirmModal = ({
   isOpen,
   title,
   message,
@@ -1517,6 +1518,7 @@ export default function UserProfile() {
                   logout={logout}
                 />
                 <ChangePassword logout={logout} />
+                <SessionManager />
               </>
             )}
             {activeTab === "statuspage" && (

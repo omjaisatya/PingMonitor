@@ -11,6 +11,7 @@ import EmailLog from "../models/EmailLog.js";
 import InAppNotification from "../models/InAppNotification.js";
 import Heartbeat from "../models/Heartbeat.js";
 import HeartbeatLog from "../models/HeartbeatLog.js";
+import Session from "../models/Session.js";
 import { dispatchHeartbeatNotifications } from "./heartbeatNotificationService.js";
 import { getMonitorRegions } from "../config/regions.js";
 import {
@@ -773,6 +774,17 @@ const startCron = () => {
 
   cron.schedule("0 * * * *", async () => {
     await evaluateScheduledReports();
+    try {
+      const expiredResult = await Session.updateMany(
+        { status: "active", expiresAt: { $lt: new Date() } },
+        { status: "expired" }
+      );
+      if (expiredResult.modifiedCount > 0) {
+        console.log(`cron: Expired ${expiredResult.modifiedCount} inactive sessions.`);
+      }
+    } catch (error) {
+      console.error("cron: session expiration check failed:", error.message);
+    }
   });
 };
 
