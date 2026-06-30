@@ -14,22 +14,22 @@
 }
 
 .m-active {
-  background: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  background: var(--green-bg);
+  color: var(--green);
 }
 
 .m-scheduled {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background: var(--accent-bg);
+  color: var(--accent);
 }
 
 .m-completed {
-  background: rgba(107, 114, 128, 0.1);
-  color: #9ca3af;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
 }
 
 .btn-icon:hover {
-  background: rgba(239, 68, 68, 0.1) !important;
+  background: var(--red-bg) !important;
 }
 
 .m-targets-container {

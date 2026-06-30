@@ -3,9 +3,7 @@
   top: 0;
   z-index: 100;
   background: var(--bg-primary);
-  border-bottom: 1px solid var(--border, #1f1f1f);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
 }
 
 .navbar-inner {

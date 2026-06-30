@@ -181,8 +181,8 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                       alignItems: "center",
                       justifyContent: "space-between",
                       padding: "16px 20px",
-                      background: "#11111b",
-                      border: `1px solid ${res.passed ? "rgba(0, 255, 136, 0.1)" : "rgba(255, 68, 102, 0.15)"}`,
+                      background: "var(--bg-input)",
+                      border: `1px solid ${res.passed ? "var(--green-border)" : "var(--red-border)"}`,
                       borderRadius: "10px",
                     }}
                   >
@@ -191,25 +191,25 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                         style={{
                           fontSize: "14px",
                           fontWeight: "700",
-                          color: "#ffffff",
+                          color: "var(--text-primary)",
                           marginBottom: "4px",
                         }}
                       >
                         Assert{" "}
-                        <code style={{ color: "#6c5ce7", fontSize: "12.5px" }}>
+                        <code style={{ color: "var(--accent)", fontSize: "12.5px" }}>
                           {res.assertion.type}
                         </code>
                         {res.assertion.property &&
                           ` (${res.assertion.property})`}{" "}
                         {res.assertion.operator}{" "}
-                        <code>{res.assertion.target}</code>
+                        <code style={{ color: "var(--text-primary)" }}>{res.assertion.target}</code>
                       </div>
                       <div
                         style={{ fontSize: "12px", color: "var(--text-muted)" }}
                       >
                         Actual Evaluated Value:{" "}
                         <code
-                          style={{ color: res.passed ? "#00ff88" : "#ff4466" }}
+                          style={{ color: res.passed ? "var(--green)" : "var(--red)" }}
                         >
                           {res.actualValue}
                         </code>
@@ -235,7 +235,7 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                 >
                   {run.request?.method}
                 </span>
-                <code style={{ fontSize: "14px", color: "#ffffff" }}>
+                <code style={{ fontSize: "14px", color: "var(--text-primary)" }}>
                   {run.request?.url}
                 </code>
               </div>
@@ -243,7 +243,7 @@ export default function ApiRunViewerModal({ runId, onClose }) {
               <div style={{ marginBottom: "20px" }}>
                 <h4
                   style={{
-                    color: "#ffffff",
+                    color: "var(--text-primary)",
                     fontSize: "13px",
                     margin: "0 0 8px 0",
                   }}
@@ -267,12 +267,12 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                         <tr
                           key={key}
                           style={{
-                            borderBottom: "1px solid rgba(255,255,255,0.02)",
+                            borderBottom: "1px solid var(--border)",
                           }}
                         >
                           <td
                             style={{
-                              color: "#8888aa",
+                              color: "var(--text-secondary)",
                               fontFamily: "var(--font-mono)",
                               fontSize: "12px",
                               width: "30%",
@@ -284,7 +284,7 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                             style={{
                               fontFamily: "var(--font-mono)",
                               fontSize: "12px",
-                              color: "#e2e2ee",
+                              color: "var(--text-primary)",
                             }}
                           >
                             {String(val)}
@@ -300,7 +300,7 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                 <div>
                   <h4
                     style={{
-                      color: "#ffffff",
+                      color: "var(--text-primary)",
                       fontSize: "13px",
                       margin: "0 0 8px 0",
                     }}
@@ -336,7 +336,7 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                   <code
                     style={{
                       fontSize: "16px",
-                      color: run.response?.status < 400 ? "#00ff88" : "#ff4466",
+                      color: run.response?.status < 400 ? "var(--green)" : "var(--red)",
                     }}
                   >
                     {run.response?.status || "Network error"}
@@ -355,7 +355,7 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                   <span
                     style={{
                       fontSize: "16px",
-                      color: "#ffffff",
+                      color: "var(--text-primary)",
                       fontWeight: "700",
                     }}
                   >
@@ -367,7 +367,7 @@ export default function ApiRunViewerModal({ runId, onClose }) {
               <div style={{ marginBottom: "20px" }}>
                 <h4
                   style={{
-                    color: "#ffffff",
+                    color: "var(--text-primary)",
                     fontSize: "13px",
                     margin: "0 0 8px 0",
                   }}
@@ -392,12 +392,12 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                           <tr
                             key={key}
                             style={{
-                              borderBottom: "1px solid rgba(255,255,255,0.02)",
+                              borderBottom: "1px solid var(--border)",
                             }}
                           >
                             <td
                               style={{
-                                color: "#8888aa",
+                                color: "var(--text-secondary)",
                                 fontFamily: "var(--font-mono)",
                                 fontSize: "12px",
                                 width: "30%",
@@ -409,7 +409,7 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                               style={{
                                 fontFamily: "var(--font-mono)",
                                 fontSize: "12px",
-                                color: "#e2e2ee",
+                                color: "var(--text-primary)",
                               }}
                             >
                               {String(val)}
@@ -426,7 +426,7 @@ export default function ApiRunViewerModal({ runId, onClose }) {
                 <div>
                   <h4
                     style={{
-                      color: "#ffffff",
+                      color: "var(--text-primary)",
                       fontSize: "13px",
                       margin: "0 0 8px 0",
                     }}

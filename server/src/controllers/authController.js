@@ -86,6 +86,7 @@ const serializeUser = (user) => ({
   statusPageShowUrl: user.statusPageShowUrl !== undefined ? user.statusPageShowUrl : true,
   statusPageCandlePeriod: user.statusPageCandlePeriod || "minutes",
   themePreference: user.themePreference || "dark",
+  avatar: user.avatar,
 });
 
 const sendAccountVerification = async (user) => {

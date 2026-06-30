@@ -89,14 +89,17 @@ apiClient.interceptors.response.use(
 
     if (status === 403 && errorMessage.toLowerCase().includes("csrf")) {
       if (!isPublicRoute(window.location.pathname)) {
+        const hasActiveSession = !!getAccessToken();
         clearAuthStorage();
         clearCsrfToken();
 
-        window.dispatchEvent(
-          new CustomEvent("auth:session-compromised", {
-            detail: { reason: "session_expired" },
-          }),
-        );
+        if (hasActiveSession) {
+          window.dispatchEvent(
+            new CustomEvent("auth:session-compromised", {
+              detail: { reason: "session_expired" },
+            }),
+          );
+        }
       }
 
       return Promise.reject(error);
@@ -105,13 +108,16 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       if (originalRequest._retry || originalRequest.skipAuthRefresh) {
         if (!isPublicRoute(window.location.pathname)) {
+          const hasActiveSession = !!getAccessToken();
           clearAuthStorage();
           clearCsrfToken();
-          window.dispatchEvent(
-            new CustomEvent("auth:session-compromised", {
-              detail: { reason: "session_expired" },
-            }),
-          );
+          if (hasActiveSession) {
+            window.dispatchEvent(
+              new CustomEvent("auth:session-compromised", {
+                detail: { reason: "session_expired" },
+              }),
+            );
+          }
         }
         return Promise.reject(error);
       }
@@ -155,15 +161,18 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         if (!isPublicRoute(window.location.pathname)) {
+          const hasActiveSession = !!getAccessToken();
           clearAuthStorage();
           clearCsrfToken();
           processQueue(refreshError, null);
 
-          window.dispatchEvent(
-            new CustomEvent("auth:session-compromised", {
-              detail: { reason: "session_expired" },
-            }),
-          );
+          if (hasActiveSession) {
+            window.dispatchEvent(
+              new CustomEvent("auth:session-compromised", {
+                detail: { reason: "session_expired" },
+              }),
+            );
+          }
         } else {
           processQueue(refreshError, null);
         }

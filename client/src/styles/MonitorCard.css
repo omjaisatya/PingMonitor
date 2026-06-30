@@ -9,13 +9,17 @@
   transition: all var(--transition);
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
 }
 
 .monitor-card:hover {
-  border-color: var(--border-light);
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-card);
+  border-color: var(--accent-border);
+  transform: translateY(-3px) scale(1.005);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+
+:root[data-theme="light"] .monitor-card:hover {
+  box-shadow: 0 12px 28px rgba(9, 9, 11, 0.06);
 }
 
 /* Pause and Down state borders */

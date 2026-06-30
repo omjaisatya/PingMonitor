@@ -35,41 +35,41 @@
 
 :root {
   color-scheme: dark;
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #111118;
-  --bg-card: #13131c;
-  --bg-card-hover: #1a1a26;
-  --bg-input: #0e0e16;
-  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-primary: #09090b;
+  --bg-secondary: #0f0f13;
+  --bg-card: #18181b;
+  --bg-card-hover: #27272a;
+  --bg-input: #121217;
+  --bg-hover: rgba(255, 255, 255, 0.04);
 
-  --border: #1e1e2e;
-  --border-light: #2a2a3e;
-  --border-accent: #3a3a5c;
-  --border-hover: #3a3a3a;
+  --border: #27272a;
+  --border-light: #3f3f46;
+  --border-accent: #52525b;
+  --border-hover: #71717a;
 
-  --text-primary: #e8e8f0;
-  --text-secondary: #8888aa;
-  --text-muted: #55556a;
-  --text-mono: #a0a0c0;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-mono: #a1a1aa;
 
-  --green: #00ff88;
-  --green-dim: #00cc6a;
-  --green-bg: rgba(0, 255, 136, 0.08);
-  --green-border: rgba(0, 255, 136, 0.2);
+  --green: #10b981;
+  --green-dim: #059669;
+  --green-bg: #064e3b;
+  --green-border: #10b981;
 
-  --red: #ff4466;
-  --red-dim: #cc3355;
-  --red-bg: rgba(255, 68, 102, 0.08);
-  --red-border: rgba(255, 68, 102, 0.2);
+  --red: #f43f5e;
+  --red-dim: #e11d48;
+  --red-bg: #881337;
+  --red-border: #f43f5e;
 
-  --yellow: #ffcc00;
-  --yellow-bg: rgba(255, 204, 0, 0.08);
-  --yellow-border: rgba(255, 204, 0, 0.2);
+  --yellow: #f59e0b;
+  --yellow-bg: #78350f;
+  --yellow-border: #f59e0b;
 
-  --accent: #6655ff;
-  --accent-dim: #5544dd;
-  --accent-bg: rgba(102, 85, 255, 0.1);
-  --accent-border: rgba(102, 85, 255, 0.3);
+  --accent: #6366f1;
+  --accent-dim: #4f46e5;
+  --accent-bg: #312e81;
+  --accent-border: #6366f1;
 
   --font-display: "Sora", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -78,56 +78,56 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --shadow-glow-green: 0 0 20px rgba(0, 255, 136, 0.15);
-  --shadow-glow-red: 0 0 20px rgba(255, 68, 102, 0.15);
-  --shadow-glow-accent: 0 0 20px rgba(102, 85, 255, 0.2);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-glow-green: 0 0 15px rgba(16, 185, 129, 0.15);
+  --shadow-glow-red: 0 0 15px rgba(244, 63, 94, 0.15);
+  --shadow-glow-accent: 0 0 20px rgba(99, 102, 241, 0.25);
 
-  --transition: 0.2s ease;
+  --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg-primary: #f7f8fb;
-  --bg-secondary: #eef1f6;
+  --bg-primary: #fafafa;
+  --bg-secondary: #f4f4f5;
   --bg-card: #ffffff;
-  --bg-card-hover: #f1f4f9;
+  --bg-card-hover: #f4f4f7;
   --bg-input: #ffffff;
-  --bg-hover: rgba(15, 23, 42, 0.06);
+  --bg-hover: rgba(9, 9, 11, 0.04);
 
-  --border: #dfe4ec;
-  --border-light: #cfd7e3;
-  --border-accent: #a7b1c4;
-  --border-hover: #bcc6d6;
+  --border: #e4e4e7;
+  --border-light: #f4f4f5;
+  --border-accent: #cbd5e1;
+  --border-hover: #a1a1aa;
 
-  --text-primary: #151923;
-  --text-secondary: #4c5568;
-  --text-muted: #7a8497;
-  --text-mono: #5f6b80;
+  --text-primary: #09090b;
+  --text-secondary: #4b5563;
+  --text-muted: #828c9a;
+  --text-mono: #64748b;
 
-  --green: #008f5a;
-  --green-dim: #007849;
-  --green-bg: rgba(0, 143, 90, 0.1);
-  --green-border: rgba(0, 143, 90, 0.24);
+  --green: #059669;
+  --green-dim: #047857;
+  --green-bg: #d1fae5;
+  --green-border: #a7f3d0;
 
-  --red: #d73555;
-  --red-dim: #b82a46;
-  --red-bg: rgba(215, 53, 85, 0.1);
-  --red-border: rgba(215, 53, 85, 0.24);
+  --red: #d01c3b;
+  --red-dim: #be123c;
+  --red-bg: #ffe4e6;
+  --red-border: #fecdd3;
 
-  --yellow: #a87500;
-  --yellow-bg: rgba(168, 117, 0, 0.12);
-  --yellow-border: rgba(168, 117, 0, 0.24);
+  --yellow: #d97706;
+  --yellow-bg: #fef3c7;
+  --yellow-border: #fde68a;
 
-  --accent: #5548d9;
-  --accent-dim: #4538bd;
-  --accent-bg: rgba(85, 72, 217, 0.1);
-  --accent-border: rgba(85, 72, 217, 0.26);
+  --accent: #4f46e5;
+  --accent-dim: #4338ca;
+  --accent-bg: #e0e7ff;
+  --accent-border: #c7d2fe;
 
-  --shadow-card: 0 10px 28px rgba(20, 30, 50, 0.09);
-  --shadow-glow-green: 0 0 20px rgba(0, 143, 90, 0.12);
-  --shadow-glow-red: 0 0 20px rgba(215, 53, 85, 0.12);
-  --shadow-glow-accent: 0 0 20px rgba(85, 72, 217, 0.14);
+  --shadow-card: 0 10px 25px rgba(9, 9, 11, 0.05);
+  --shadow-glow-green: 0 0 15px rgba(5, 150, 105, 0.08);
+  --shadow-glow-red: 0 0 15px rgba(208, 28, 59, 0.08);
+  --shadow-glow-accent: 0 0 20px rgba(79, 70, 229, 0.1);
 }
 
 *,
@@ -244,25 +244,30 @@ select {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
-  box-shadow: 0 0 0 0 rgba(102, 85, 255, 0.4);
+  box-shadow: var(--shadow-glow-accent);
 }
 .btn-primary:hover {
   background: var(--accent-dim);
-  box-shadow: var(--shadow-glow-accent);
-  transform: translateY(-1px);
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 25px rgba(99, 102, 241, 0.35);
+  transform: translateY(-1.5px);
 }
 .btn-primary:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 
 .btn-outline {
-  background: transparent;
+  background: var(--bg-card);
   color: var(--text-primary);
-  border-color: var(--border-light);
+  border-color: var(--border);
 }
 .btn-outline:hover {
-  border-color: var(--border-accent);
+  border-color: var(--border-hover);
   background: var(--bg-card-hover);
+  transform: translateY(-1.5px);
+}
+.btn-outline:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .btn-danger {
@@ -271,19 +276,28 @@ select {
   border-color: var(--red-border);
 }
 .btn-danger:hover {
-  background: rgba(255, 68, 102, 0.15);
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
   box-shadow: var(--shadow-glow-red);
+  transform: translateY(-1.5px);
+}
+.btn-danger:active {
+  transform: translateY(0) scale(0.98);
 }
 
 .btn-ghost {
-  background: transparent;
+  background: var(--bg-secondary);
   color: var(--text-secondary);
   border-color: transparent;
   padding: 8px 12px;
 }
 .btn-ghost:hover {
   color: var(--text-primary);
-  background: var(--bg-card);
+  background: var(--bg-card-hover);
+}
+.btn-ghost:active {
+  transform: scale(0.98);
 }
 
 .btn-sm {
@@ -313,6 +327,8 @@ select {
 
 .card:hover {
   border-color: var(--border-light);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
 }
 
 .form-group {
@@ -344,7 +360,7 @@ select {
 .form-input:focus {
   border-color: var(--accent);
   background: var(--bg-card);
-  box-shadow: 0 0 0 3px rgba(102, 85, 255, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .form-input::placeholder {
@@ -1277,11 +1293,11 @@ tbody tr:hover {
 .switch-slider {
   width: 36px;
   height: 20px;
-  background-color: var(--border);
+  background-color: var(--bg-secondary);
   border-radius: 20px;
   position: relative;
-  transition: background-color var(--transition);
-  border: 1px solid var(--border-light);
+  transition: background-color var(--transition), border-color var(--transition);
+  border: 1px solid var(--border);
 }
 
 .switch-slider::before {
@@ -1290,12 +1306,11 @@ tbody tr:hover {
   height: 14px;
   width: 14px;
   left: 2px;
-  bottom: 2px;
-  background-color: var(--text-secondary);
+  top: 2px;
+  background-color: #fff;
   border-radius: 50%;
-  transition:
-    transform var(--transition),
-    background-color var(--transition);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform var(--transition);
 }
 
 .switch-input:checked + .switch-slider {
@@ -1305,7 +1320,6 @@ tbody tr:hover {
 
 .switch-input:checked + .switch-slider::before {
   transform: translateX(16px);
-  background-color: #fff;
 }
 
 .custom-toast-container {
@@ -1324,10 +1338,8 @@ tbody tr:hover {
 .custom-toast {
   pointer-events: auto;
   position: relative;
-  background: rgba(19, 19, 28, 0.85);
+  background: var(--bg-card);
   border: 1px solid var(--border-light, #2a2a3e);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border-radius: var(--radius-lg, 12px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   overflow: hidden;
