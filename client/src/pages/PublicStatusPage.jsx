@@ -10,8 +10,11 @@ import {
   FiActivity,
   FiAlertCircle,
   FiExternalLink,
+  FiMail,
+  FiX
 } from "react-icons/fi";
 import { MarkdownBlock } from "../utils/markdown";
+import SubscribeModal from "../components/SubscribeModal";
 
 const StatusSkeleton = () => (
   <div className="status-page-container">
@@ -122,6 +125,10 @@ export default function PublicStatusPage() {
 
   const query = new URLSearchParams(window.location.search);
   const isEmbed = query.get("embed") === "true";
+  const isVerifiedParam = query.get("verified") === "true";
+
+  const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
+  const [verifiedBanner, setVerifiedBanner] = useState(isVerifiedParam);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -287,7 +294,42 @@ export default function PublicStatusPage() {
           <div className="status-header__logo">{AppName}</div>
           <h1 className="status-header__title">{title}</h1>
           <p className="status-header__desc">{description}</p>
+          <div style={{ marginTop: "16px" }}>
+            <button
+              className="btn btn-outline"
+              onClick={() => setIsSubscribeOpen(true)}
+              style={{ display: "inline-flex", alignItems: "center", gap: "8px", margin: "0 auto" }}
+            >
+              <FiMail /> Subscribe to Updates
+            </button>
+          </div>
         </header>
+      )}
+
+      {verifiedBanner && (
+        <div
+          className="system-status-banner all_operational"
+          style={{
+            marginBottom: "24px",
+            width: "100%",
+            maxWidth: "800px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            boxSizing: "border-box",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <FiCheckCircle size={20} color="var(--green)" />
+            <span style={{ fontWeight: 600 }}>Your subscription has been verified successfully!</span>
+          </div>
+          <button
+            onClick={() => setVerifiedBanner(false)}
+            style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}
+          >
+            <FiX size={16} />
+          </button>
+        </div>
       )}
 
       {renderStatusBanner()}
@@ -467,6 +509,13 @@ export default function PublicStatusPage() {
           </a>
         </div>
       )}
+
+      <SubscribeModal
+        isOpen={isSubscribeOpen}
+        onClose={() => setIsSubscribeOpen(false)}
+        monitors={monitors}
+        slugOrUserId={slugOrUserId}
+      />
     </div>
   );
 }
