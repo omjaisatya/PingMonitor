@@ -1,13 +1,18 @@
 import { Link } from "react-router-dom";
-import "../styles/MonitorCard.css";
-import { useState } from "react";
+import "../styles/Synthetic.css";
+import "../styles/Heartbeats.css";
+import { useState, useEffect } from "react";
 import apiClient from "../api/axios";
 import { toast } from "../context/ToastContext";
-import { FiServer } from "react-icons/fi";
+import { FiPause, FiPlay, FiTrash2, FiChevronRight, FiClock, FiEdit3 } from "react-icons/fi";
 
 export default function MonitorCard({ monitor, onEdit, onDelete }) {
   const [isActive, setIsActive] = useState(monitor.isActive);
   const [loading, isLoading] = useState(false);
+
+  useEffect(() => {
+    setIsActive(monitor.isActive);
+  }, [monitor.isActive]);
 
   const handleToggleActive = async () => {
     isLoading(true);
@@ -27,54 +32,98 @@ export default function MonitorCard({ monitor, onEdit, onDelete }) {
   const isUp = monitor.status === "up";
   const isDown = monitor.status === "down";
 
+  const badgeClass = !isActive
+    ? "paused"
+    : monitor.status === "up"
+      ? "success"
+      : monitor.status === "down"
+        ? "failed"
+        : "paused";
+
+  const badgeText = !isActive
+    ? "PAUSED"
+    : monitor.status === "up"
+      ? "HEALTHY"
+      : monitor.status === "down"
+        ? "FAILED"
+        : "PENDING";
+
   return (
     <div
-      className={`monitor-card ${isDown ? "monitor-card--down" : ""} ${!isActive ? "monitor-card--paused" : ""}`}
+      className={`synthetic-card ${isDown ? "monitor-card--down" : ""} ${!isActive ? "monitor-card--paused" : ""}`}
     >
-      <div className="monitor-card-header">
-        <div className="monitor-card-header-left">
-          <span className="card-icon-wrapper">
-            <FiServer className={`monitor-card-icon ${isUp ? "text-green" : isDown ? "text-red" : "text-yellow"}`} />
+      <div>
+        <div className="card-top">
+          <Link to={`/monitors/${monitor._id}`} className="card-title">
+            {monitor.name}
+          </Link>
+          <span className="card-interval">
+            <FiClock style={{ marginRight: "4px", verticalAlign: "middle" }} />
+            Every {monitor.interval}m
           </span>
-          <div className="monitor-status-row">
-            <span className={`monitor-status-dot ${monitor.status} ${isActive ? "active" : "paused"}`} />
-            <span className="monitor-status-text">{isActive ? monitor.status : "paused"}</span>
+        </div>
+
+        <div className="card-middle" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="copy-input-group" style={{ margin: 0 }}>
+            <span className="copy-input" style={{ fontFamily: "var(--font-mono)", fontSize: "11px" }} title={monitor.url}>
+              {monitor.url}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12.5px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--text-muted)" }}>Last Checked:</span>
+              <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
+                {monitor.updatedAt ? new Date(monitor.updatedAt).toLocaleTimeString() : "Never"}
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "var(--text-muted)" }}>Method:</span>
+              <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
+                {monitor.method || "GET"}
+              </span>
+            </div>
           </div>
         </div>
-        <span className="monitor-interval mono">↻ {monitor.interval}m</span>
       </div>
 
-      <div className="monitor-card-body">
-        <h3 className="monitor-name">{monitor.name}</h3>
-        <p className="monitor-url mono" title={monitor.url}>{monitor.url}</p>
-      </div>
+      <div className="card-bottom" style={{ marginTop: "16px" }}>
+        <span className={`status-badge badge-${badgeClass}`}>
+          {badgeText}
+        </span>
 
-      <div className="monitor-actions">
-        <button
-          className="btn btn-outline btn-sm"
-          onClick={() => onEdit(monitor)}
-        >
-          Edit
-        </button>
-
-        <button
-          onClick={handleToggleActive}
-          disabled={loading}
-          className="btn btn-outline btn-sm"
-        >
-          {isActive ? "Pause" : "Resume"}
-        </button>
-        <button
-          className="btn btn-danger btn-sm"
-          onClick={() => onDelete(monitor)}
-        >
-          Delete
-        </button>
-      </div>
-      <div className="monitor-card-footer">
-        <Link to={`/monitors/${monitor._id}`} className="btn btn-ghost btn-sm monitor-logs-link">
-          View Logs →
-        </Link>
+        <div className="card-actions">
+          <button
+            className="btn-icon-only"
+            onClick={handleToggleActive}
+            disabled={loading}
+            title={isActive ? "Pause Monitor" : "Resume Monitor"}
+          >
+            {isActive ? <FiPause size={16} /> : <FiPlay size={16} />}
+          </button>
+          <button
+            className="btn-icon-only"
+            onClick={() => onEdit(monitor)}
+            title="Edit Monitor"
+          >
+            <FiEdit3 size={16} />
+          </button>
+          <button
+            className="btn-icon-only btn-delete"
+            onClick={() => onDelete(monitor)}
+            title="Delete Monitor"
+          >
+            <FiTrash2 size={16} />
+          </button>
+          <Link
+            to={`/monitors/${monitor._id}`}
+            className="btn-icon-only"
+            title="View Details"
+            style={{ color: "var(--accent)" }}
+          >
+            <FiChevronRight size={18} />
+          </Link>
+        </div>
       </div>
     </div>
   );
