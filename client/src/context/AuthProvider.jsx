@@ -9,6 +9,8 @@ import {
   setAccessToken,
   setCsrfToken,
   setStoredUser,
+  getRefreshToken,
+  setRefreshToken,
 } from "../utils/csrf";
 import { useCallback } from "react";
 
@@ -54,18 +56,25 @@ export const AuthProvider = ({ children }) => {
         const cachedToken = getAccessToken();
 
         if (!cachedToken) {
-          if (!getCsrfToken()) {
-            setIsSessionResolving(false);
-            return;
+          const rt = getRefreshToken();
+          const headers = {};
+          if (rt) {
+            headers["Authorization"] = `Bearer ${rt}`;
           }
 
           const { data } = await apiClient.post(
             "/auth/refresh",
             {},
-            { skipAuthRefresh: true },
+            { 
+              skipAuthRefresh: true,
+              headers,
+            },
           );
           setAccessToken(data.token);
           setCsrfToken(data.csrfToken);
+          if (data.refreshToken) {
+            setRefreshToken(data.refreshToken);
+          }
         }
 
         const response = await apiClient.get("/auth/me");
@@ -99,11 +108,14 @@ export const AuthProvider = ({ children }) => {
     restoreSession();
   }, [clearSession]);
 
-  const establishSession = useCallback((userProfile, accessToken, csrfToken) => {
+  const establishSession = useCallback((userProfile, accessToken, csrfToken, refreshToken) => {
     try {
       setAccessToken(accessToken);
       setStoredUser(userProfile);
       setCsrfToken(csrfToken);
+      if (refreshToken) {
+        setRefreshToken(refreshToken);
+      }
       setCurrentUser(userProfile);
       setIsAuthenticated(true);
     } catch (error) {

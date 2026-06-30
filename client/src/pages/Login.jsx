@@ -118,7 +118,7 @@ export default function Login() {
 
       if (data.user && data.token) {
         toast.success(data.message || "Login successful");
-        establishSession(data.user, data.token, data.csrfToken);
+        establishSession(data.user, data.token, data.csrfToken, data.refreshToken);
         if (rememberMe) {
           localStorage.setItem("pingmonitor_saved_email", email);
           localStorage.setItem("pingmonitor_remember_me", "true");

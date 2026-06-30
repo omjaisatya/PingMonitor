@@ -69,7 +69,7 @@ export const updateName = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { name: name.trim() },
-      { new: true },
+      { returnDocument: 'after' },
     ).select("-password");
 
     res.json({ message: "Name updated", name: user.name });
@@ -90,7 +90,7 @@ export const updateThemePreference = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { themePreference },
-      { new: true },
+      { returnDocument: 'after' },
     ).select("-password");
 
     res.json({

@@ -319,7 +319,7 @@ export const upsertAutomationRule = async (req, res) => {
         ? await IncidentAutomationRule.findOneAndUpdate(
             { _id: ruleId, userId: req.user._id },
             payload,
-            { new: true },
+            { returnDocument: 'after' },
           )
         : await IncidentAutomationRule.create({ ...payload, userId: req.user._id });
 

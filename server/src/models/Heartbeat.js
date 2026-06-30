@@ -97,6 +97,5 @@ const heartbeatSchema = new Schema(
 );
 
 heartbeatSchema.index({ userId: 1 });
-heartbeatSchema.index({ token: 1 });
 
 export default mongoose.model("Heartbeat", heartbeatSchema);
