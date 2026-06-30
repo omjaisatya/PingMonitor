@@ -4,35 +4,35 @@
    ---------------------------------------------------- */
 
 :root {
-  /* Color System */
-  --auth-bg: #0a0a0f;
-  --auth-card: #13131c;
-  --auth-border: #1e1e2e;
-  --auth-text-primary: #e8e8f0;
-  --auth-text-secondary: #8888aa;
-  --auth-text-muted: #55556a;
+  /* Color System - linked to global theme variables */
+  --auth-bg: var(--bg-primary);
+  --auth-card: var(--bg-card);
+  --auth-border: var(--border);
+  --auth-text-primary: var(--text-primary);
+  --auth-text-secondary: var(--text-secondary);
+  --auth-text-muted: var(--text-muted);
   
-  --auth-accent: #6655ff;
-  --auth-accent-glow: rgba(102, 85, 255, 0.15);
-  --auth-accent-border: rgba(102, 85, 255, 0.3);
+  --auth-accent: var(--accent);
+  --auth-accent-glow: var(--accent-bg);
+  --auth-accent-border: var(--accent-border);
   
-  --auth-success: #00ff88;
-  --auth-success-bg: rgba(0, 255, 136, 0.06);
-  --auth-success-border: rgba(0, 255, 136, 0.15);
+  --auth-success: var(--green);
+  --auth-success-bg: var(--green-bg);
+  --auth-success-border: var(--green-border);
   
-  --auth-danger: #ff4466;
-  --auth-danger-bg: rgba(255, 68, 102, 0.06);
-  --auth-danger-border: rgba(255, 68, 102, 0.15);
+  --auth-danger: var(--red);
+  --auth-danger-bg: var(--red-bg);
+  --auth-danger-border: var(--red-border);
 
-  --auth-yellow: #ffcc00;
-  --auth-yellow-bg: rgba(255, 204, 0, 0.06);
-  --auth-yellow-border: rgba(255, 204, 0, 0.15);
+  --auth-yellow: var(--yellow);
+  --auth-yellow-bg: var(--yellow-bg);
+  --auth-yellow-border: var(--yellow-border);
 
   /* Fonts */
-  --auth-font-display: "Sora", sans-serif;
-  --auth-font-mono: "JetBrains Mono", monospace;
+  --auth-font-display: var(--font-display);
+  --auth-font-mono: var(--font-mono);
 
-  /* Layout Constants (Vercel-inspired spacing) */
+  /* Layout Constants */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -41,9 +41,9 @@
   --space-2xl: 48px;
   --space-3xl: 64px;
   
-  --auth-radius: 8px;
-  --auth-radius-lg: 12px;
-  --auth-transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --auth-radius: var(--radius-md);
+  --auth-radius-lg: var(--radius-lg);
+  --auth-transition: var(--transition);
 }
 
 /* Base Container */
@@ -62,7 +62,7 @@
    Left Panel: Product Value Showcase
    ---------------------------------------------------- */
 .auth-showcase {
-  background-color: #0b0b11;
+  background-color: var(--bg-secondary);
   border-right: 1px solid var(--auth-border);
   display: flex;
   flex-direction: column;
@@ -166,7 +166,7 @@
 }
 
 .dashboard-preview-header {
-  background: #181825;
+  background: var(--bg-secondary);
   border-bottom: 1px solid var(--auth-border);
   padding: var(--space-sm) var(--space-md);
   display: flex;
@@ -223,7 +223,7 @@
 }
 
 .preview-card {
-  background: #191924;
+  background: var(--bg-card);
   border: 1px solid var(--auth-border);
   border-radius: var(--auth-radius);
   padding: var(--space-md);
@@ -251,7 +251,7 @@
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: #111119;
+  background: var(--bg-input);
   border: 1px solid var(--auth-border);
   font-size: 13px;
 }
@@ -661,7 +661,7 @@
 }
 
 .form-input {
-  background: #111119;
+  background: var(--bg-input);
   border: 1px solid var(--auth-border);
   border-radius: var(--auth-radius);
   padding: 11px 14px;
@@ -673,12 +673,12 @@
 }
 
 .form-input:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--border-hover);
 }
 
 .form-input:focus {
   border-color: var(--auth-accent);
-  background: #13131c;
+  background: var(--bg-card);
   box-shadow: 0 0 0 3px var(--auth-accent-glow);
 }
 
@@ -690,7 +690,7 @@
 .form-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: #0d0d14;
+  background: var(--bg-secondary);
 }
 
 .password-field {
@@ -764,14 +764,14 @@
   transform: translateY(-50%);
   height: 15px;
   width: 15px;
-  background-color: #111119;
+  background-color: var(--bg-input);
   border: 1px solid var(--auth-border);
   border-radius: 4px;
   transition: border-color var(--auth-transition), background-color var(--auth-transition), box-shadow var(--auth-transition);
 }
 
 .checkbox-container:hover input ~ .checkbox-checkmark {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--border-hover);
 }
 
 .checkbox-container input:checked ~ .checkbox-checkmark {
@@ -841,7 +841,7 @@
 }
 
 .btn-oauth {
-  background: #111119;
+  background: var(--bg-input);
   border: 1px solid var(--auth-border);
   color: var(--auth-text-primary);
   display: flex;
@@ -859,8 +859,8 @@
 }
 
 .btn-oauth:hover {
-  background: #161622;
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
   transform: translateY(-1px);
 }
 

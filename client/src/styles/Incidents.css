@@ -185,9 +185,10 @@
   text-align: left;
   padding: 14px 14px 14px 24px;
   color: var(--text-primary);
-  background: transparent;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border);
   cursor: pointer;
+  transition: background var(--transition);
 }
 
 .incident-list-item.active,

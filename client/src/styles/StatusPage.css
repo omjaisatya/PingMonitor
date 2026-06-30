@@ -304,11 +304,11 @@
   bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%) translateY(4px);
-  background: #0d1117;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   border-radius: 6px;
   padding: 8px 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-card);
   font-size: 12px;
   color: var(--text-primary);
   white-space: nowrap;
@@ -317,8 +317,8 @@
   opacity: 0;
   visibility: hidden;
   transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
+    opacity var(--transition),
+    transform var(--transition);
 }
 
 .uptime-bar-wrapper:hover .uptime-tooltip {

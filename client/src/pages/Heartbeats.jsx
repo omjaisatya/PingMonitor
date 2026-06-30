@@ -14,9 +14,10 @@ import {
   FiPause,
   FiClock,
   FiAlertTriangle,
+  FiChevronRight,
 } from "react-icons/fi";
-import { FaHeart, FaHeartBroken } from "react-icons/fa";
 import "../styles/Heartbeats.css";
+import "../styles/Synthetic.css";
 
 export default function Heartbeats() {
   const [heartbeats, setHeartbeats] = useState([]);
@@ -260,7 +261,7 @@ export default function Heartbeats() {
         )}
 
         {loading ? (
-          <div className="heartbeats-grid">
+          <div className="synthetic-grid">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="skeleton-card">
                 <div
@@ -279,7 +280,7 @@ export default function Heartbeats() {
             ))}
           </div>
         ) : heartbeats.length === 0 ? (
-          <div className="empty-state">
+          <div className="empty-state-card">
             <div
               className="empty-state-icon"
               style={{
@@ -291,10 +292,10 @@ export default function Heartbeats() {
             >
               <FiActivity size={36} />
             </div>
-            <h3>No heartbeats yet</h3>
+            <h3>No Heartbeats Configured</h3>
             <p>
               Create a heartbeat endpoint and ping it from your cron jobs or
-              background scripts
+              background scripts.
             </p>
             <button
               className="btn btn-primary"
@@ -309,123 +310,124 @@ export default function Heartbeats() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "6px",
-                margin: "16px auto 0",
+                marginTop: "12px",
               }}
             >
               <FiPlus size={16} /> Create Heartbeat Endpoint
             </button>
           </div>
         ) : (
-          <div className="heartbeats-grid">
+          <div className="synthetic-grid">
             {heartbeats.map((hb) => {
-              const statusClass = hb.isActive
-                ? hb.status === "up"
-                  ? "heartbeat-card--up"
+              const badgeClass = !hb.isActive
+                ? "paused"
+                : hb.status === "up"
+                  ? "success"
                   : hb.status === "down"
-                    ? "heartbeat-card--down"
-                    : ""
-                : "heartbeat-card--paused";
+                    ? "failed"
+                    : "paused";
+              const badgeText = !hb.isActive
+                ? "PAUSED"
+                : hb.status === "up"
+                  ? "HEALTHY"
+                  : hb.status === "down"
+                    ? "MISSING"
+                    : "UNKNOWN";
               const checkInUrl = `${import.meta.env.VITE_SERVER_URL}/public/heartbeat/ping/${hb.token}`;
 
               return (
-                 <div key={hb._id} className={`heartbeat-card ${statusClass}`}>
-                  <div className="heartbeat-card-header">
-                    <div className="heartbeat-card-header-left">
-                      <span className="heartbeat-card-icon-wrapper">
-                        {hb.isActive ? (
-                          hb.status === "up" ? (
-                            <FaHeart className="heartbeat-card-icon heart-icon--live" />
-                          ) : (
-                            <FaHeartBroken className="heartbeat-card-icon heart-icon--broken" />
-                          )
-                        ) : (
-                          <FaHeart className="heartbeat-card-icon heart-icon--paused" />
-                        )}
+                <div key={hb._id} className="synthetic-card">
+                  <div>
+                    <div className="card-top">
+                      <Link
+                        to={`/heartbeats/${hb._id}`}
+                        className="card-title"
+                      >
+                        {hb.name}
+                      </Link>
+                      <span className="card-interval">
+                        <FiClock
+                          style={{ marginRight: "4px", verticalAlign: "middle" }}
+                        />
+                        Every {hb.interval}
                       </span>
-                      <div className="heartbeat-status-row">
-                        <span className={`heartbeat-status-dot ${hb.isActive ? hb.status : "unknown"} ${hb.isActive ? "active" : "paused"}`} />
-                        <span className="heartbeat-status-text">{hb.isActive ? hb.status : "paused"}</span>
+                    </div>
+
+                    <div className="card-middle" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div className="copy-input-group" style={{ margin: 0 }}>
+                        <span className="copy-input" style={{ fontFamily: "var(--font-mono)", fontSize: "11px" }}>{checkInUrl}</span>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs"
+                          onClick={() => handleCopy(hb.token, hb._id)}
+                          title="Copy ping URL"
+                          style={{ padding: "6px" }}
+                        >
+                          {copiedId === hb._id ? (
+                            <FiCheck
+                              size={13}
+                              style={{ color: "var(--green)" }}
+                            />
+                          ) : (
+                            <FiCopy size={13} />
+                          )}
+                        </button>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12.5px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ color: "var(--text-muted)" }}>Last Check-in:</span>
+                          <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
+                            {hb.lastPingAt
+                              ? new Date(hb.lastPingAt).toLocaleTimeString()
+                              : "Never"}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ color: "var(--text-muted)" }}>Uptime:</span>
+                          <span style={{ color: "var(--text-primary)", fontWeight: "600" }}>
+                            {hb.pingCount > 0
+                              ? `${Math.round((hb.upCount / hb.pingCount) * 100)}%`
+                              : "100%"}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <span className="heartbeat-interval mono">↻ {hb.interval}</span>
                   </div>
 
-                  <div className="heartbeat-card-body">
-                    <Link
-                      to={`/heartbeats/${hb._id}`}
-                      className="heartbeat-name"
-                      style={{ textDecoration: "none" }}
-                    >
-                      {hb.name}
-                    </Link>
-                    <div className="copy-input-group" style={{ marginTop: "12px" }}>
-                      <span className="copy-input">{checkInUrl}</span>
+                  <div className="card-bottom" style={{ marginTop: "16px" }}>
+                    <span className={`status-badge badge-${badgeClass}`}>
+                      {badgeText}
+                    </span>
+
+                    <div className="card-actions">
                       <button
-                        type="button"
-                        className="btn btn-ghost btn-xs"
-                        onClick={() => handleCopy(hb.token, hb._id)}
-                        title="Copy ping URL"
-                        style={{ padding: "8px" }}
+                        className="btn-icon-only"
+                        onClick={() => handleToggleActive(hb._id)}
+                        title={hb.isActive ? "Pause Monitor" : "Resume Monitor"}
                       >
-                        {copiedId === hb._id ? (
-                          <FiCheck
-                            size={13}
-                            style={{ color: "var(--green)" }}
-                          />
+                        {hb.isActive ? (
+                          <FiPause size={16} />
                         ) : (
-                          <FiCopy size={13} />
+                          <FiPlay size={16} />
                         )}
                       </button>
+                      <button
+                        className="btn-icon-only btn-delete"
+                        onClick={() => handleDelete(hb._id)}
+                        title="Delete Monitor"
+                      >
+                        <FiTrash2 size={16} />
+                      </button>
+                      <Link
+                        to={`/heartbeats/${hb._id}`}
+                        className="btn-icon-only"
+                        title="View Details"
+                        style={{ color: "var(--accent)" }}
+                      >
+                        <FiChevronRight size={18} />
+                      </Link>
                     </div>
-
-                    <div
-                      style={{
-                        marginTop: "16px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "8px",
-                      }}
-                    >
-                      <div className="heartbeat-info-row">
-                        <span>Last Check-in:</span>
-                        <span className="heartbeat-info-value">
-                          {hb.lastPingAt
-                            ? new Date(hb.lastPingAt).toLocaleTimeString()
-                            : "Never"}
-                        </span>
-                      </div>
-                      <div className="heartbeat-info-row">
-                        <span>Uptime:</span>
-                        <span className="heartbeat-info-value">
-                          {hb.pingCount > 0
-                            ? `${Math.round((hb.upCount / hb.pingCount) * 100)}%`
-                            : "100%"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="heartbeat-actions">
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      onClick={() => handleToggleActive(hb._id)}
-                    >
-                      {hb.isActive ? "Pause" : "Resume"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleDelete(hb._id)}
-                      style={{ marginLeft: "auto" }}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                  <div className="heartbeat-card-footer">
-                    <Link to={`/heartbeats/${hb._id}`} className="heartbeat-logs-link">
-                      View Details →
-                    </Link>
                   </div>
                 </div>
               );
