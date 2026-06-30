@@ -85,7 +85,7 @@ export default function Register() {
 
       if (data.newUser && data.token) {
         toast.success(data.message || "Account created");
-        establishSession(data.newUser, data.token, data.csrfToken);
+        establishSession(data.newUser, data.token, data.csrfToken, data.refreshToken);
         navigate("/dashboard");
       }
     } catch (err) {

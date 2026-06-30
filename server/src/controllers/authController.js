@@ -23,7 +23,7 @@ const RESET_TOKEN_TTL = 15 * 60 * 1000;
 const VERIFY_TOKEN_TTL = 24 * 60 * 60 * 1000;
 const isProduction = process.env.NODE_ENV === "production";
 
-const sameSiteCookieOption = () => (isProduction ? "none" : "strict");
+const sameSiteCookieOption = () => (isProduction ? "none" : "lax");
 
 const refreshCookieOptions = (maxAge = REFRESH_COOKIE_MAX_AGE) => ({
   httpOnly: true,
@@ -142,6 +142,7 @@ const signup = async (req, res) => {
     res.status(201).json({
       message: "Successfully created account",
       token: accessToken,
+      refreshToken,
       csrfToken,
       newUser: serializeUser(newUser),
     });
@@ -209,6 +210,7 @@ const login = async (req, res) => {
     res.status(200).json({
       message: "Successfully login",
       token: accessToken,
+      refreshToken,
       csrfToken,
       user: serializeUser(user),
     });
@@ -219,7 +221,14 @@ const login = async (req, res) => {
 
 const refreshTokenEP = async (req, res) => {
   try {
-    const refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
+    let refreshToken = req.cookies[REFRESH_TOKEN_COOKIE_NAME];
+
+    if (!refreshToken) {
+      const authHeader = req.headers.authorization || req.headers.Authorization;
+      if (authHeader && authHeader.startsWith("Bearer")) {
+        refreshToken = authHeader.split(" ")[1];
+      }
+    }
 
     if (!refreshToken) {
       return res.status(401).json({ message: "Refresh token not found" });
@@ -261,6 +270,7 @@ const refreshTokenEP = async (req, res) => {
     res.status(200).json({
       message: "Token refreshed",
       token: accessToken,
+      refreshToken: newRefreshToken,
       csrfToken,
     });
   } catch (error) {

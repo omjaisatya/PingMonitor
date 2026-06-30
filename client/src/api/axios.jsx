@@ -6,6 +6,8 @@ import {
   getCsrfToken,
   setAccessToken,
   setCsrfToken,
+  getRefreshToken,
+  setRefreshToken,
 } from "../utils/csrf";
 
 const API = import.meta.env.VITE_SERVER_URL;
@@ -135,22 +137,30 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const rt = getRefreshToken();
+        const headers = {
+          "x-csrf-token": getCsrfToken() || "",
+        };
+        if (rt) {
+          headers["Authorization"] = `Bearer ${rt}`;
+        }
+
         // request to refresh the access token
         const { data } = await axios.post(
           `${API}/auth/refresh`,
           {},
           {
             withCredentials: true,
-            headers: {
-              // include CSRF on the refresh call too
-              "x-csrf-token": getCsrfToken() || "",
-            },
+            headers,
           },
         );
 
         const { token: newAccessToken } = data;
         setAccessToken(newAccessToken);
         setCsrfToken(data.csrfToken);
+        if (data.refreshToken) {
+          setRefreshToken(data.refreshToken);
+        }
 
         apiClient.defaults.headers.Authorization = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
