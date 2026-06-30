@@ -280,6 +280,7 @@ export const updateStatusPageSettings = async (req, res) => {
         statusPageShowUrl: user.statusPageShowUrl,
         statusPageCandlePeriod: user.statusPageCandlePeriod,
         themePreference: user.themePreference || "dark",
+        avatar: user.avatar,
       },
     });
   } catch (error) {
@@ -315,6 +316,10 @@ export const uploadAvatar = async (req, res) => {
           {
             folder: "pingmonitor/avatars",
             resource_type: "image",
+            transformation: [
+              { width: 300, height: 300, crop: "limit" },
+              { quality: "auto", fetch_format: "auto" },
+            ],
           },
           (error, result) => {
             if (error) return reject(error);

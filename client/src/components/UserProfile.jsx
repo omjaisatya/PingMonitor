@@ -174,6 +174,58 @@ const ConfirmModal = ({
   );
 };
 
+const compressImage = (file, maxWidth = 300, maxHeight = 300, quality = 0.8) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const compressedFile = new File([blob], file.name, {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 const AvatarSettings = ({ user, onUpdate }) => {
   const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -194,12 +246,19 @@ const AvatarSettings = ({ user, onUpdate }) => {
     return true;
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (validateFile(file)) {
-        setSelectedFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
+        try {
+          const compressed = await compressImage(file);
+          setSelectedFile(compressed);
+          setPreviewUrl(URL.createObjectURL(compressed));
+        } catch (err) {
+          console.error("Compression error:", err);
+          setSelectedFile(file);
+          setPreviewUrl(URL.createObjectURL(file));
+        }
       }
     }
   };
@@ -214,15 +273,22 @@ const AvatarSettings = ({ user, onUpdate }) => {
     }
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (validateFile(file)) {
-        setSelectedFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
+        try {
+          const compressed = await compressImage(file);
+          setSelectedFile(compressed);
+          setPreviewUrl(URL.createObjectURL(compressed));
+        } catch (err) {
+          console.error("Compression error:", err);
+          setSelectedFile(file);
+          setPreviewUrl(URL.createObjectURL(file));
+        }
       }
     }
   };
