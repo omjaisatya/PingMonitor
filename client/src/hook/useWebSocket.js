@@ -1,16 +1,19 @@
 import { useEffect, useRef } from "react";
 import { getAccessToken } from "../utils/csrf";
 
-export function useWebSocket(onEvent) {
+export function useWebSocket(onEvent, statusPageSlug = null) {
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
 
   useEffect(() => {
     const token = getAccessToken();
     const apiUrl = import.meta.env.VITE_SERVER_URL?.replace(/\/api$/, "");
-    if (!token || !apiUrl) return undefined;
+    if (!apiUrl) return undefined;
+    if (!token && !statusPageSlug) return undefined;
 
-    const wsUrl = `${apiUrl.replace(/^http/, "ws")}/ws?token=${encodeURIComponent(token)}`;
+    const wsUrl = token && !statusPageSlug
+      ? `${apiUrl.replace(/^http/, "ws")}/ws?token=${encodeURIComponent(token)}`
+      : `${apiUrl.replace(/^http/, "ws")}/ws?statusPageSlug=${encodeURIComponent(statusPageSlug)}`;
     let socket = null;
     let reconnectTimeout = null;
     let isClosed = false;

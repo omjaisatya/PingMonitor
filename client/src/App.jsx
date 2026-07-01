@@ -261,6 +261,22 @@ const ApplicationRouter = () => (
 );
 
 export default function App() {
+  const hostname = window.location.hostname;
+  const mainDomains = ["localhost", "127.0.0.1", "pingmonitor.com", "pingmonitor.netlify.app"];
+  const isCustomDomain = !mainDomains.some((d) => hostname.includes(d));
+
+  if (isCustomDomain) {
+    return (
+      <ErrorBoundary>
+        <ToastProvider>
+          <Suspense fallback={<PageLoader />}>
+            <PublicStatusPage slugOrUserId={hostname} isCustomDomain={true} />
+          </Suspense>
+        </ToastProvider>
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <AuthProvider>

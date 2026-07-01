@@ -1,6 +1,8 @@
 import crypto from "crypto";
+import mongoose from "mongoose";
 import User from "../models/User.js";
 import { verifyAccessToken } from "../../utils/tokenCofig.js";
+import { deleteCache } from "./cacheService.js";
 
 const clients = new Map();
 
@@ -27,8 +29,8 @@ const encodeFrame = (payload) => {
   return Buffer.concat([header, data]);
 };
 
-const addClient = (userId, socket) => {
-  const key = userId.toString();
+const addClient = (userIdKey, socket) => {
+  const key = userIdKey.toString();
   if (!clients.has(key)) clients.set(key, new Set());
   clients.get(key).add(socket);
 
@@ -41,13 +43,36 @@ const addClient = (userId, socket) => {
 
 export const emitIncidentEvent = (userId, eventName, payload) => {
   if (!userId) return;
-  const sockets = clients.get(userId.toString());
-  if (!sockets) return;
+
+  const userIdStr = userId.toString();
+
+  if (
+    eventName.startsWith("monitor:") ||
+    eventName.startsWith("incident:") ||
+    eventName.startsWith("check:")
+  ) {
+    deleteCache(`status_page:${userIdStr}`).catch((err) => {
+      console.error("[Realtime Service] Failed to invalidate status page cache:", err.message);
+    });
+  }
 
   const frame = encodeFrame(JSON.stringify({ event: eventName, payload }));
-  sockets.forEach((socket) => {
-    if (!socket.destroyed) socket.write(frame);
-  });
+
+  // Send to owner's dashboard room
+  const dashboardSockets = clients.get(userIdStr);
+  if (dashboardSockets) {
+    dashboardSockets.forEach((socket) => {
+      if (!socket.destroyed) socket.write(frame);
+    });
+  }
+
+  const publicRoomKey = `status_page_${userIdStr}`;
+  const publicSockets = clients.get(publicRoomKey);
+  if (publicSockets) {
+    publicSockets.forEach((socket) => {
+      if (!socket.destroyed) socket.write(frame);
+    });
+  }
 };
 
 export const handleRealtimeUpgrade = async (request, socket) => {
@@ -62,17 +87,41 @@ export const handleRealtimeUpgrade = async (request, socket) => {
     }
 
     const token = searchParams.get("token");
+    const statusPageSlug = searchParams.get("statusPageSlug");
     const key = request.headers["sec-websocket-key"];
-    if (!token || !key) {
+
+    if (!key || (!token && !statusPageSlug)) {
       socket.destroy();
       return;
     }
 
-    const decoded = verifyAccessToken(token);
-    const user = await User.findById(decoded.id).select("_id isDeactivated");
-    if (!user || user.isDeactivated) {
-      socket.destroy();
-      return;
+    let roomKey = null;
+
+    if (token) {
+      const decoded = verifyAccessToken(token);
+      const user = await User.findById(decoded.id).select("_id isDeactivated");
+      if (!user || user.isDeactivated) {
+        socket.destroy();
+        return;
+      }
+      roomKey = user._id.toString();
+    } else {
+      let user = null;
+      if (mongoose.Types.ObjectId.isValid(statusPageSlug)) {
+        user = await User.findById(statusPageSlug).select("_id isDeactivated statusPageEnabled");
+      }
+      if (!user) {
+        user = await User.findOne({ statusPageSlug }).select("_id isDeactivated statusPageEnabled");
+      }
+      if (!user) {
+        user = await User.findOne({ statusPageCustomDomain: statusPageSlug }).select("_id isDeactivated statusPageEnabled");
+      }
+
+      if (!user || user.isDeactivated || !user.statusPageEnabled) {
+        socket.destroy();
+        return;
+      }
+      roomKey = `status_page_${user._id.toString()}`;
     }
 
     const accept = crypto
@@ -90,8 +139,9 @@ export const handleRealtimeUpgrade = async (request, socket) => {
         "",
       ].join("\r\n"),
     );
-    addClient(user._id, socket);
-  } catch {
+
+    addClient(roomKey, socket);
+  } catch (err) {
     socket.destroy();
   }
 };

@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { swaggerUi, swaggerSpec } from "./config/swagger.js";
@@ -92,6 +93,11 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // main home url
 app.get("/", (req, res) => {
   res.json({ message: "Ping monitor is live" });
+});
+
+app.get("/status-widget.js", (req, res) => {
+  res.setHeader("Content-Type", "application/javascript");
+  res.sendFile(path.join(process.cwd(), "src", "utils", "status-widget.js"));
 });
 
 // protected

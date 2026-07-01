@@ -8,6 +8,10 @@ import HeartbeatLog from "../models/HeartbeatLog.js";
 import MaintenanceWindow from "../models/MaintenanceWindow.js";
 import MonitorStats from "../models/MonitorStats.js";
 import { dispatchHeartbeatNotifications } from "../services/heartbeatNotificationService.js";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { JWT_SECRET } from "../config/env.config.js";
+import { getCache, setCache } from "../services/cacheService.js";
 
 const generateSvgBadge = (label, statusText, statusColor) => {
   const labelClean = label
@@ -53,7 +57,41 @@ const findUserBySlugOrId = async (slugOrId) => {
   if (!user) {
     user = await User.findOne({ statusPageSlug: slugOrId });
   }
+  if (!user) {
+    user = await User.findOne({ statusPageCustomDomain: slugOrId });
+  }
   return user;
+};
+
+export const authStatusPage = async (req, res) => {
+  try {
+    const { slugOrUserId } = req.params;
+    const { password } = req.body;
+
+    const user = await findUserBySlugOrId(slugOrUserId);
+    if (!user) {
+      return res.status(404).json({ message: "Status page not found" });
+    }
+
+    if (!user.statusPagePasswordProtected || !user.statusPagePassword) {
+      return res.status(400).json({ message: "This page is not password protected" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.statusPagePassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Incorrect password" });
+    }
+
+    const token = jwt.sign(
+      { statusPageUserId: user._id.toString() },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ token, message: "Authenticated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 export const getPublicStatus = async (req, res) => {
@@ -69,6 +107,36 @@ export const getPublicStatus = async (req, res) => {
       return res
         .status(403)
         .json({ message: "This status page is not available" });
+    }
+
+    if (user.statusPagePasswordProtected && user.statusPagePassword) {
+      const token = req.headers["x-status-page-token"];
+      let authorized = false;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, JWT_SECRET);
+          if (decoded.statusPageUserId === user._id.toString()) {
+            authorized = true;
+          }
+        } catch (err) {
+        }
+      }
+
+      if (!authorized) {
+        return res.status(401).json({
+          isPasswordProtected: true,
+          message: "This status page is password protected.",
+          title: user.statusPageTitle,
+          colors: user.statusPageColors,
+          logo: user.statusPageLogo?.url,
+        });
+      }
+    }
+
+    const cacheKey = `status_page:${user._id.toString()}`;
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) {
+      return res.json(cachedData);
     }
 
     const showUrl = user.statusPageShowUrl !== false;
@@ -178,7 +246,7 @@ export const getPublicStatus = async (req, res) => {
       }
     }
 
-    res.json({
+    const responsePayload = {
       title: user.statusPageTitle,
       description: user.statusPageDescription,
       systemStatus,
@@ -186,7 +254,16 @@ export const getPublicStatus = async (req, res) => {
       monitors: monitorsWithLogs,
       incidents: publicIncidents,
       maintenanceWindows,
-    });
+      colors: user.statusPageColors,
+      logo: user.statusPageLogo?.url,
+      favicon: user.statusPageFavicon?.url,
+      customCSS: user.statusPageCustomCSS,
+      template: user.statusPageTemplate || "classic",
+    };
+
+    await setCache(cacheKey, responsePayload, 15);
+
+    res.json(responsePayload);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
