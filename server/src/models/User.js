@@ -50,6 +50,30 @@ const userSchema = new Schema(
       enum: ["minutes", "day", "month"],
       default: "minutes",
     },
+    statusPageCustomDomain: { type: String, unique: true, sparse: true },
+    statusPageLogo: {
+      url: { type: String, default: null },
+      publicId: { type: String, default: null },
+    },
+    statusPageFavicon: {
+      url: { type: String, default: null },
+      publicId: { type: String, default: null },
+    },
+    statusPageColors: {
+      primary: { type: String, default: "#6655ff" },
+      background: { type: String, default: "#0a0a0f" },
+      cardBackground: { type: String, default: "#13131c" },
+      text: { type: String, default: "#e8e8f0" },
+      textMuted: { type: String, default: "#8888aa" },
+    },
+    statusPageCustomCSS: { type: String, default: "" },
+    statusPagePassword: { type: String, default: null },
+    statusPagePasswordProtected: { type: Boolean, default: false },
+    statusPageTemplate: {
+      type: String,
+      enum: ["classic", "grid", "minimal"],
+      default: "classic",
+    },
 
     themePreference: {
       type: String,

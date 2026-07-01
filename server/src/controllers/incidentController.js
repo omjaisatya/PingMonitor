@@ -4,6 +4,7 @@ import IncidentAutomationRule from "../models/IncidentAutomationRule.js";
 import Monitor from "../models/Monitor.js";
 import { sendIncidentUpdateEmail } from "../services/emailService.js";
 import { emitIncidentEvent } from "../services/realtimeService.js";
+import { notifyStatusPageSubscribers } from "../services/subscriberNotificationService.js";
 
 const openStates = ["investigating", "identified", "monitoring"];
 
@@ -115,6 +116,9 @@ export const createIncident = async (req, res) => {
     });
 
     publish(incident, "incident:created");
+    notifyStatusPageSubscribers({ incident, eventType: "created" }).catch((err) =>
+      console.error("Failed to notify subscribers:", err)
+    );
     res.status(201).json({ message: "Incident created", incident });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -159,6 +163,10 @@ export const updateIncident = async (req, res) => {
 
     await incident.save();
     publish(incident);
+    notifyStatusPageSubscribers({
+      incident,
+      eventType: incident.state === "resolved" ? "resolved" : "updated",
+    }).catch((err) => console.error("Failed to notify subscribers:", err));
     res.json({ message: "Incident updated", incident });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -189,6 +197,11 @@ export const addIncidentComment = async (req, res) => {
 
     await incident.save();
     publish(incident);
+    if (!isInternal) {
+      notifyStatusPageSubscribers({ incident, eventType: "updated" }).catch((err) =>
+        console.error("Failed to notify subscribers:", err)
+      );
+    }
     res.status(201).json({ message: "Comment added", incident });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -244,6 +257,9 @@ export const updateAffectedServices = async (req, res) => {
 
     await incident.save();
     publish(incident);
+    notifyStatusPageSubscribers({ incident, eventType: "updated" }).catch((err) =>
+      console.error("Failed to notify subscribers:", err)
+    );
     res.json({ message: "Affected services updated", incident });
   } catch (error) {
     res.status(500).json({ message: error.message });

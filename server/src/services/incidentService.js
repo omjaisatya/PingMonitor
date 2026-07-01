@@ -3,6 +3,7 @@ import IncidentAutomationRule from "../models/IncidentAutomationRule.js";
 import User from "../models/User.js";
 import { sendIncidentUpdateEmail } from "./emailService.js";
 import { emitIncidentEvent } from "./realtimeService.js";
+import { notifyStatusPageSubscribers } from "./subscriberNotificationService.js";
 
 const openStates = ["investigating", "identified", "monitoring"];
 
@@ -115,6 +116,9 @@ export const handleMonitorFailureIncident = async ({
   }
 
   broadcastIncident(incident, "incident:created");
+  notifyStatusPageSubscribers({ incident, eventType: "created" }).catch((err) =>
+    console.error("Failed to notify subscribers:", err)
+  );
   return incident;
 };
 
@@ -180,6 +184,10 @@ export const handleMonitorRecoveryIncident = async ({
   }
 
   broadcastIncident(incident);
+  notifyStatusPageSubscribers({
+    incident,
+    eventType: incident.state === "resolved" ? "resolved" : "updated",
+  }).catch((err) => console.error("Failed to notify subscribers:", err));
   return incident;
 };
 

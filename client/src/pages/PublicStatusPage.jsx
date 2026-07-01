@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import apiClient from "../api/axios";
 import "../styles/StatusPage.css";
@@ -10,8 +10,14 @@ import {
   FiActivity,
   FiAlertCircle,
   FiExternalLink,
+  FiMail,
+  FiX,
+  FiLock,
+  FiChevronRight
 } from "react-icons/fi";
 import { MarkdownBlock } from "../utils/markdown";
+import SubscribeModal from "../components/SubscribeModal";
+import { useWebSocket } from "../hook/useWebSocket";
 
 const StatusSkeleton = () => (
   <div className="status-page-container">
@@ -114,36 +120,177 @@ const StatusSkeleton = () => (
   </div>
 );
 
-export default function PublicStatusPage() {
-  const { slugOrUserId } = useParams();
+export default function PublicStatusPage({ slugOrUserId: propSlug, isCustomDomain = false }) {
+  const params = useParams();
+  const slugOrUserId = propSlug || params.slugOrUserId;
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [passwordRequired, setPasswordRequired] = useState(false);
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState(null);
+  const [submittingPassword, setSubmittingPassword] = useState(false);
+  const [passwordPageMeta, setPasswordPageMeta] = useState(null);
+
   const query = new URLSearchParams(window.location.search);
   const isEmbed = query.get("embed") === "true";
+  const isVerifiedParam = query.get("verified") === "true";
 
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        setLoading(true);
-        const response = await apiClient.get(`/public/status/${slugOrUserId}`);
-        setData(response.data);
-        setError(null);
-      } catch (err) {
-        console.error("Public status fetch error:", err);
-        setError(err.response?.data?.message || "Failed to load status page");
-      } finally {
-        setLoading(false);
+  const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
+  const [verifiedBanner, setVerifiedBanner] = useState(isVerifiedParam);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem(`status_page_token_${slugOrUserId}`);
+      const headers = {};
+      if (token) {
+        headers["x-status-page-token"] = token;
       }
-    };
 
-    if (slugOrUserId) {
-      fetchStatus();
+      const response = await apiClient.get(`/public/status/${slugOrUserId}`, { headers });
+      setData(response.data);
+      setError(null);
+      setPasswordRequired(false);
+    } catch (err) {
+      console.error("Public status fetch error:", err);
+      if (err.response?.status === 401 && err.response?.data?.isPasswordProtected) {
+        setPasswordRequired(true);
+        setPasswordPageMeta(err.response.data);
+      } else {
+        setError(err.response?.data?.message || "Failed to load status page");
+      }
+    } finally {
+      setLoading(false);
     }
   }, [slugOrUserId]);
 
+  useEffect(() => {
+    if (slugOrUserId) {
+      fetchStatus();
+    }
+  }, [slugOrUserId, fetchStatus]);
+
+  useWebSocket(() => {
+    console.log("[WS Status Page] Refreshing status due to realtime event...");
+    fetchStatus();
+  }, slugOrUserId);
+
+  useEffect(() => {
+    if (data) {
+      document.title = data.title || "System Status";
+
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (!metaDesc) {
+        metaDesc = document.createElement("meta");
+        metaDesc.setAttribute("name", "description");
+        document.head.appendChild(metaDesc);
+      }
+      metaDesc.setAttribute("content", data.description || "Live status of our services.");
+
+      if (data.favicon) {
+        let linkFavicon = document.querySelector('link[rel="icon"]');
+        if (!linkFavicon) {
+          linkFavicon = document.createElement("link");
+          linkFavicon.setAttribute("rel", "icon");
+          document.head.appendChild(linkFavicon);
+        }
+        linkFavicon.setAttribute("href", data.favicon);
+      }
+    }
+  }, [data]);
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    setSubmittingPassword(true);
+    setAuthError(null);
+    try {
+      const res = await apiClient.post(`/public/status/auth/${slugOrUserId}`, { password });
+      localStorage.setItem(`status_page_token_${slugOrUserId}`, res.data.token);
+      setPasswordRequired(false);
+      fetchStatus();
+    } catch (err) {
+      setAuthError(err.response?.data?.message || "Invalid password");
+    } finally {
+      setSubmittingPassword(false);
+    }
+  };
+
   if (loading) return <StatusSkeleton />;
+
+  if (passwordRequired) {
+    const metaColors = passwordPageMeta?.colors;
+    const metaTitle = passwordPageMeta?.title || "System Status";
+    const metaLogo = passwordPageMeta?.logo;
+
+    const brandVariables = metaColors ? `
+      :root, .password-page-wrapper {
+        --primary: ${metaColors.primary} !important;
+        --bg-primary: ${metaColors.background} !important;
+        --bg-secondary: ${metaColors.cardBackground} !important;
+        --text-primary: ${metaColors.text} !important;
+        --text-muted: ${metaColors.textMuted} !important;
+      }
+      body {
+        background-color: ${metaColors.background} !important;
+      }
+    ` : "";
+
+    return (
+      <div className="password-page-wrapper" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+        {brandVariables && <style>{brandVariables}</style>}
+        <div className="status-card" style={{ width: "100%", maxWidth: "420px", padding: "32px", textAlign: "center", borderRadius: "16px" }}>
+          {metaLogo ? (
+            <img src={metaLogo} alt="Logo" style={{ maxHeight: "48px", marginBottom: "24px" }} />
+          ) : (
+            <div className="status-header__logo" style={{ marginBottom: "24px" }}>{AppName}</div>
+          )}
+          <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "8px" }}>Password Required</h2>
+          <p style={{ color: "var(--text-muted)", fontSize: "14px", marginBottom: "24px" }}>
+            The status page for <strong>{metaTitle}</strong> is private.
+          </p>
+
+          <form onSubmit={handlePasswordSubmit}>
+            <div style={{ position: "relative", marginBottom: "20px" }}>
+              <FiLock style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+              <input
+                type="password"
+                placeholder="Enter password..."
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "12px 16px 12px 40px",
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  borderRadius: "8px",
+                  color: "var(--text-primary)",
+                  fontSize: "14px",
+                  boxSizing: "border-box",
+                }}
+                required
+              />
+            </div>
+            {authError && (
+              <p style={{ color: "var(--red)", fontSize: "13px", marginTop: "-12px", marginBottom: "16px", textAlign: "left" }}>
+                {authError}
+              </p>
+            )}
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={submittingPassword}
+              style={{ width: "100%", justifyContent: "center" }}
+            >
+              {submittingPassword ? "Verifying..." : "Access Status Page"}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -157,7 +304,122 @@ export default function PublicStatusPage() {
     );
   }
 
-  const { title, description, systemStatus, monitors, incidents = [], maintenanceWindows = [], candlePeriod = "minutes" } = data;
+  const {
+    title,
+    description,
+    systemStatus,
+    monitors,
+    incidents = [],
+    maintenanceWindows = [],
+    candlePeriod = "minutes",
+    colors,
+    logo,
+    customCSS,
+    template = "classic",
+  } = data;
+
+  const brandCSS = colors ? `
+    :root, .status-page-container {
+      --green: #10b981 !important;
+      --red: #ef4444 !important;
+      --yellow: #f59e0b !important;
+      --primary: ${colors.primary} !important;
+      --bg-primary: ${colors.background} !important;
+      --bg-secondary: ${colors.cardBackground} !important;
+      --text-primary: ${colors.text} !important;
+      --text-muted: ${colors.textMuted} !important;
+      --card-bg: ${colors.cardBackground} !important;
+      --border-color: rgba(255, 255, 255, 0.06) !important;
+    }
+    body {
+      background-color: ${colors.background} !important;
+      color: ${colors.text} !important;
+    }
+    
+    /* Grid Template Styles */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .status-grid-card {
+      background: var(--bg-secondary, #13131c);
+      border: 1px solid var(--border-color, rgba(255,255,255,0.06));
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    .status-grid-card__header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .status-grid-card__name {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .status-grid-card__url {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-grid-card__status-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+    
+    /* Minimal Template Styles */
+    .status-minimal {
+      background: var(--bg-secondary, #13131c);
+      border: 1px solid var(--border-color, rgba(255,255,255,0.06));
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .status-minimal-services {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .status-minimal-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 500;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .status-minimal-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .status-text-badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .status-text-badge.up {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+    .status-text-badge.down {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+  ` : "";
 
   const renderStatusBanner = () => {
     const bannerConfig = {
@@ -280,14 +542,142 @@ export default function PublicStatusPage() {
     );
   };
 
+  const renderClassicTemplate = () => (
+    <div className="status-card">
+      {!isEmbed && <h2 className="status-card__header">Services Status</h2>}
+      {monitors.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "20px", color: "var(--text-muted)" }}>
+          No active services found on this status page.
+        </div>
+      ) : (
+        monitors.map((monitor) => (
+          <div key={monitor._id} className="status-monitor-row">
+            <div className="status-monitor-row__info">
+              <div className="status-monitor-row__name">
+                <span className={`status-dot ${monitor.status || "unknown"}`} />
+                {monitor.name}
+              </div>
+              {monitor.url && (
+                <a href={monitor.url} target="_blank" rel="noreferrer" className="status-monitor-row__url">
+                  {monitor.url}
+                  <FiExternalLink size={11} style={{ marginLeft: "4px" }} />
+                </a>
+              )}
+            </div>
+
+            <div className="status-monitor-row__history">
+              {renderMonitorBars(monitor.recentLogs || [])}
+              <div className={`status-monitor-row__badge ${monitor.status || "unknown"}`}>
+                {(monitor.status || "unknown").toUpperCase()}
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
+  const renderGridTemplate = () => (
+    <div className="status-grid">
+      {monitors.length === 0 ? (
+        <div className="status-card" style={{ gridColumn: "1/-1", textAlign: "center", padding: "24px", color: "var(--text-muted)" }}>
+          No active services found on this status page.
+        </div>
+      ) : (
+        monitors.map((monitor) => (
+          <div key={monitor._id} className="status-grid-card">
+            <div className="status-grid-card__header">
+              <span className={`status-dot ${monitor.status || "unknown"}`} />
+              <h3 className="status-grid-card__name">{monitor.name}</h3>
+            </div>
+            {monitor.url && (
+              <a href={monitor.url} target="_blank" rel="noreferrer" className="status-grid-card__url">
+                {monitor.url}
+              </a>
+            )}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px" }}>
+              <span className="status-grid-card__status-text">
+                {(monitor.status || "unknown").toUpperCase()}
+              </span>
+              {renderMonitorBars(monitor.recentLogs || [])}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
+  const renderMinimalTemplate = () => (
+    <div className="status-minimal">
+      {monitors.length === 0 ? (
+        <div style={{ textAlign: "center", color: "var(--text-muted)" }}>
+          No active services found on this status page.
+        </div>
+      ) : (
+        <div className="status-minimal-services">
+          {monitors.map((monitor) => (
+            <div key={monitor._id} className="status-minimal-row">
+              <span style={{ fontWeight: 600, color: "var(--text-primary)" }}>{monitor.name}</span>
+              <span className={`status-text-badge ${monitor.status || "unknown"}`}>
+                {(monitor.status || "unknown").toUpperCase()}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className={`status-page-container ${isEmbed ? "embed-mode" : ""}`}>
+      {brandCSS && <style>{brandCSS}</style>}
+      {customCSS && <style>{customCSS}</style>}
+
       {!isEmbed && (
         <header className="status-header">
-          <div className="status-header__logo">{AppName}</div>
+          {logo ? (
+            <img src={logo} alt="Logo" className="status-header__logo-img" style={{ maxHeight: "48px", marginBottom: "16px" }} />
+          ) : (
+            <div className="status-header__logo">{AppName}</div>
+          )}
           <h1 className="status-header__title">{title}</h1>
           <p className="status-header__desc">{description}</p>
+          <div style={{ marginTop: "16px" }}>
+            <button
+              className="btn btn-outline"
+              onClick={() => setIsSubscribeOpen(true)}
+              style={{ display: "inline-flex", alignItems: "center", gap: "8px", margin: "0 auto" }}
+            >
+              <FiMail /> Subscribe to Updates
+            </button>
+          </div>
         </header>
+      )}
+
+      {verifiedBanner && (
+        <div
+          className="system-status-banner all_operational"
+          style={{
+            marginBottom: "24px",
+            width: "100%",
+            maxWidth: "800px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            boxSizing: "border-box",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <FiCheckCircle size={20} color="var(--green)" />
+            <span style={{ fontWeight: 600 }}>Your subscription has been verified successfully!</span>
+          </div>
+          <button
+            onClick={() => setVerifiedBanner(false)}
+            style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}
+          >
+            <FiX size={16} />
+          </button>
+        </div>
       )}
 
       {renderStatusBanner()}
@@ -314,53 +704,14 @@ export default function PublicStatusPage() {
         </div>
       )}
 
-      <div className="status-card">
-        {!isEmbed && <h2 className="status-card__header">Services Status</h2>}
-        {monitors.length === 0 ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "20px",
-              color: "var(--text-muted)",
-            }}
-          >
-            No active services found on this status page.
-          </div>
-        ) : (
-          monitors.map((monitor) => (
-            <div key={monitor._id} className="status-monitor-row">
-              <div className="status-monitor-row__info">
-                <div className="status-monitor-row__name">
-                  <span
-                    className={`status-dot ${monitor.status || "unknown"}`}
-                  />
-                  {monitor.name}
-                </div>
-                {monitor.url && (
-                  <a
-                    href={monitor.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="status-monitor-row__url"
-                  >
-                    {monitor.url}
-                    <FiExternalLink size={11} style={{ marginLeft: "4px" }} />
-                  </a>
-                )}
-              </div>
-
-              <div className="status-monitor-row__history">
-                {renderMonitorBars(monitor.recentLogs || [])}
-                <div
-                  className={`status-monitor-row__badge ${monitor.status || "unknown"}`}
-                >
-                  {(monitor.status || "unknown").toUpperCase()}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      {/* Render selected layout template */}
+      {template === "grid" ? (
+        renderGridTemplate()
+      ) : template === "minimal" ? (
+        renderMinimalTemplate()
+      ) : (
+        renderClassicTemplate()
+      )}
 
       {!isEmbed && (
         <div className="status-card">
@@ -467,6 +818,13 @@ export default function PublicStatusPage() {
           </a>
         </div>
       )}
+
+      <SubscribeModal
+        isOpen={isSubscribeOpen}
+        onClose={() => setIsSubscribeOpen(false)}
+        monitors={monitors}
+        slugOrUserId={slugOrUserId}
+      />
     </div>
   );
 }

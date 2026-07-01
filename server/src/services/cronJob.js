@@ -42,6 +42,7 @@ import {
 } from "./maintenanceService.js";
 import { generateReportData } from "./reportService.js";
 import { sendScheduledReportEmail } from "./emailService.js";
+import { dispatchDigestEmails } from "./subscriberNotificationService.js";
 
 // Keep-Alive connection pooling agents
 const httpAgent = new http.Agent({ keepAlive: true });
@@ -774,6 +775,11 @@ const startCron = () => {
 
   cron.schedule("0 * * * *", async () => {
     await evaluateScheduledReports();
+    try {
+      await dispatchDigestEmails();
+    } catch (err) {
+      console.error("cron: subscriber digests failed:", err.message);
+    }
     try {
       const expiredResult = await Session.updateMany(
         { status: "active", expiresAt: { $lt: new Date() } },

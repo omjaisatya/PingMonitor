@@ -21,6 +21,7 @@ const ApiMonitors = lazy(() => import("./pages/ApiMonitors"));
 const ApiDetail = lazy(() => import("./pages/ApiDetail"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
 const PublicStatusPage = lazy(() => import("./pages/PublicStatusPage"));
+const UnsubscribePage = lazy(() => import("./pages/UnsubscribePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const UserProfile = lazy(() => import("./components/UserProfile"));
@@ -252,6 +253,7 @@ const ApplicationRouter = () => (
       }
     />
 
+    <Route path="/unsubscribe/:subscriberId" element={<UnsubscribePage />} />
     <Route path="/status/:slugOrUserId" element={<PublicStatusPage />} />
 
     <Route path="*" element={<NotFound />} />
@@ -259,6 +261,22 @@ const ApplicationRouter = () => (
 );
 
 export default function App() {
+  const hostname = window.location.hostname;
+  const mainDomains = ["localhost", "127.0.0.1", "pingmonitor.com", "pingmonitor.netlify.app"];
+  const isCustomDomain = !mainDomains.some((d) => hostname.includes(d));
+
+  if (isCustomDomain) {
+    return (
+      <ErrorBoundary>
+        <ToastProvider>
+          <Suspense fallback={<PageLoader />}>
+            <PublicStatusPage slugOrUserId={hostname} isCustomDomain={true} />
+          </Suspense>
+        </ToastProvider>
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <AuthProvider>

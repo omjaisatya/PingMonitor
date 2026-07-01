@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { swaggerUi, swaggerSpec } from "./config/swagger.js";
@@ -15,6 +16,7 @@ import routerApi from "./routes/apiRoutes.js";
 import routerConfig from "./routes/configRoutes.js";
 import routerMaintenance from "./routes/maintenanceRoutes.js";
 import routerSessions from "./routes/sessionRoutes.js";
+import routerSubscriber from "./routes/subscriberRoutes.js";
 import cors from "cors";
 import { FRONTEND_URL } from "./config/env.config.js";
 import health from "./routes/healthRoute.js";
@@ -93,8 +95,14 @@ app.get("/", (req, res) => {
   res.json({ message: "Ping monitor is live" });
 });
 
+app.get("/status-widget.js", (req, res) => {
+  res.setHeader("Content-Type", "application/javascript");
+  res.sendFile(path.join(process.cwd(), "src", "utils", "status-widget.js"));
+});
+
 // protected
 app.use("/api/public", routerPublic);
+app.use("/api/public/subscribe", routerSubscriber);
 app.use("/api/auth", limiter, routerAuth);
 app.use("/api/auth/profile", routerProfile);
 app.use("/api/profile/sessions", routerSessions);

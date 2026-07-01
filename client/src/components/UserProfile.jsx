@@ -933,6 +933,20 @@ const StatusPageSettings = ({ user, onUpdate }) => {
   const [candlePeriod, setCandlePeriod] = useState(
     user?.statusPageCandlePeriod || "minutes",
   );
+
+  const [customDomain, setCustomDomain] = useState(user?.statusPageCustomDomain || "");
+  const [primaryColor, setPrimaryColor] = useState(user?.statusPageColors?.primary || "#6655ff");
+  const [backgroundColor, setBackgroundColor] = useState(user?.statusPageColors?.background || "#0a0a0f");
+  const [cardBgColor, setCardBgColor] = useState(user?.statusPageColors?.cardBackground || "#13131c");
+  const [textColor, setTextColor] = useState(user?.statusPageColors?.text || "#e8e8f0");
+  const [textMutedColor, setTextMutedColor] = useState(user?.statusPageColors?.textMuted || "#8888aa");
+  const [customCSS, setCustomCSS] = useState(user?.statusPageCustomCSS || "");
+  const [template, setTemplate] = useState(user?.statusPageTemplate || "classic");
+  const [passwordProtected, setPasswordProtected] = useState(user?.statusPagePasswordProtected ?? false);
+  const [password, setPassword] = useState("");
+
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [monitors, setMonitors] = useState([]);
@@ -946,6 +960,16 @@ const StatusPageSettings = ({ user, onUpdate }) => {
       setSlug(user.statusPageSlug || "");
       setShowUrl(user.statusPageShowUrl ?? true);
       setCandlePeriod(user.statusPageCandlePeriod || "minutes");
+
+      setCustomDomain(user.statusPageCustomDomain || "");
+      setPrimaryColor(user.statusPageColors?.primary || "#6655ff");
+      setBackgroundColor(user.statusPageColors?.background || "#0a0a0f");
+      setCardBgColor(user.statusPageColors?.cardBackground || "#13131c");
+      setTextColor(user.statusPageColors?.text || "#e8e8f0");
+      setTextMutedColor(user.statusPageColors?.textMuted || "#8888aa");
+      setCustomCSS(user.statusPageCustomCSS || "");
+      setTemplate(user.statusPageTemplate || "classic");
+      setPasswordProtected(user.statusPagePasswordProtected ?? false);
     }
   }, [user]);
 
@@ -968,6 +992,109 @@ const StatusPageSettings = ({ user, onUpdate }) => {
     fetchMonitors();
   }, []);
 
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    setUploadingLogo(true);
+    try {
+      const { data } = await apiClient.post("/auth/profile/status-page/logo", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      toast.success("Status page logo uploaded!");
+      onUpdate({ ...user, statusPageLogo: data.statusPageLogo });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to upload logo");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    try {
+      const { data } = await apiClient.delete("/auth/profile/status-page/logo");
+      toast.success("Status page logo removed!");
+      onUpdate({ ...user, statusPageLogo: data.statusPageLogo });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to remove logo");
+    }
+  };
+
+  const handleFaviconUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append("avatar", file);
+
+    setUploadingFavicon(true);
+    try {
+      const { data } = await apiClient.post("/auth/profile/status-page/favicon", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      toast.success("Status page favicon uploaded!");
+      onUpdate({ ...user, statusPageFavicon: data.statusPageFavicon });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to upload favicon");
+    } finally {
+      setUploadingFavicon(false);
+    }
+  };
+
+  const handleFaviconDelete = async () => {
+    try {
+      const { data } = await apiClient.delete("/auth/profile/status-page/favicon");
+      toast.success("Status page favicon removed!");
+      onUpdate({ ...user, statusPageFavicon: data.statusPageFavicon });
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to remove favicon");
+    }
+  };
+
+  const handleResetDefaults = async () => {
+    if (!window.confirm("Are you sure you want to reset all status page settings to defaults? This will also remove custom logo/favicon and password protection.")) return;
+
+    setSaving(true);
+    try {
+      if (user?.statusPageLogo?.url) {
+        await apiClient.delete("/auth/profile/status-page/logo");
+      }
+      if (user?.statusPageFavicon?.url) {
+        await apiClient.delete("/auth/profile/status-page/favicon");
+      }
+
+      const { data } = await apiClient.patch("/auth/profile/status-page", {
+        statusPageEnabled: true,
+        statusPageTitle: "System Status",
+        statusPageDescription: "Live status of our services.",
+        statusPageSlug: "",
+        statusPageShowUrl: true,
+        statusPageCandlePeriod: "minutes",
+        statusPageCustomDomain: "",
+        statusPageColors: {
+          primary: "#6655ff",
+          background: "#0a0a0f",
+          cardBackground: "#13131c",
+          text: "#e8e8f0",
+          textMuted: "#8888aa",
+        },
+        statusPageCustomCSS: "",
+        statusPageTemplate: "classic",
+        statusPagePasswordProtected: false,
+        statusPagePassword: "",
+      });
+
+      toast.success("Status page reset to defaults successfully!");
+      onUpdate(data.user);
+      setPassword("");
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to reset settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -979,9 +1106,22 @@ const StatusPageSettings = ({ user, onUpdate }) => {
         statusPageSlug: slug.trim(),
         statusPageShowUrl: showUrl,
         statusPageCandlePeriod: candlePeriod,
+        statusPageCustomDomain: customDomain.trim(),
+        statusPageColors: {
+          primary: primaryColor,
+          background: backgroundColor,
+          cardBackground: cardBgColor,
+          text: textColor,
+          textMuted: textMutedColor,
+        },
+        statusPageCustomCSS: customCSS,
+        statusPageTemplate: template,
+        statusPagePasswordProtected: passwordProtected,
+        statusPagePassword: passwordProtected ? password : "",
       });
       toast.success("Status page settings updated!");
       onUpdate(data.user);
+      setPassword(""); // clear password field
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to save settings");
     } finally {
@@ -992,6 +1132,7 @@ const StatusPageSettings = ({ user, onUpdate }) => {
   const currentSlugOrId = user?.statusPageSlug || user?.id || user?._id;
   const publicUrl = `${window.location.origin}/status/${currentSlugOrId}`;
   const iframeCode = `<iframe src="${publicUrl}?embed=true" width="100%" height="450" style="border:none;border-radius:12px;background:transparent;"></iframe>`;
+  const widgetScriptCode = `<script id="ping-monitor-widget" src="${window.location.origin}/status-widget.js" data-status-page="${currentSlugOrId}"></script>`;
 
   const serverBase = import.meta.env.VITE_SERVER_URL;
   const userBadgeUrl = `${serverBase}/public/badge-user/${currentSlugOrId}`;
@@ -1056,6 +1197,23 @@ const StatusPageSettings = ({ user, onUpdate }) => {
           </Field>
 
           <Field
+            label="Layout Template"
+            hint="Choose display format for public status page"
+            id="statusTemplate"
+          >
+            <select
+              id="statusTemplate"
+              className="profile-input"
+              value={template}
+              onChange={(e) => setTemplate(e.target.value)}
+            >
+              <option value="classic">Classic Uptime List</option>
+              <option value="grid">Service Status Grid</option>
+              <option value="minimal">Minimalist Status Banner</option>
+            </select>
+          </Field>
+
+          <Field
             label="Status Page Title"
             hint="Display title on the public page"
             id="statusTitle"
@@ -1106,9 +1264,205 @@ const StatusPageSettings = ({ user, onUpdate }) => {
             </div>
           </Field>
 
-          <button className="btn btn-primary" type="submit" disabled={saving}>
-            {saving ? "Saving settings..." : "Save Status Settings"}
-          </button>
+          <Field
+            label="Custom Domain Mapping"
+            hint="Map a CNAME custom DNS domain (e.g. status.yourdomain.com) to your status page."
+            id="statusCustomDomain"
+          >
+            <input
+              id="statusCustomDomain"
+              className="profile-input"
+              value={customDomain}
+              onChange={(e) => setCustomDomain(e.target.value)}
+              placeholder="e.g. status.acme.com"
+            />
+          </Field>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "20px", margin: "24px 0" }}>
+            <Field
+              label="Status Page Logo"
+              hint="Upload custom logo. Bounded to 400x120px."
+            >
+              {user?.statusPageLogo?.url ? (
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "var(--bg-input)", padding: "12px", borderRadius: "8px", border: "1px solid var(--border)", minHeight: "46px", width: "100%" }}>
+                  <img src={user.statusPageLogo.url} alt="Logo" style={{ maxHeight: "24px", maxWidth: "120px", objectFit: "contain" }} />
+                  <button type="button" onClick={handleLogoDelete} className="btn btn-danger btn-sm" style={{ marginLeft: "auto", display: "inline-flex" }}>
+                    <FiTrash2 size={13} style={{ marginRight: "4px" }} />
+                    <span>Remove</span>
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", width: "100%" }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => document.getElementById("status-logo-input").click()}
+                    style={{ width: "100%", justifyContent: "center", display: "inline-flex" }}
+                    disabled={uploadingLogo}
+                  >
+                    <FiUpload size={14} style={{ marginRight: "6px" }} />
+                    <span>{uploadingLogo ? "Uploading..." : "Upload Logo"}</span>
+                  </button>
+                  <input
+                    id="status-logo-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    style={{ display: "none" }}
+                  />
+                </div>
+              )}
+            </Field>
+
+            <Field
+              label="Status Page Favicon"
+              hint="Upload custom favicon. Bounded to 48x48px."
+            >
+              {user?.statusPageFavicon?.url ? (
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", background: "var(--bg-input)", padding: "12px", borderRadius: "8px", border: "1px solid var(--border)", minHeight: "46px", width: "100%" }}>
+                  <img src={user.statusPageFavicon.url} alt="Favicon" style={{ height: "24px", width: "24px", objectFit: "contain" }} />
+                  <button type="button" onClick={handleFaviconDelete} className="btn btn-danger btn-sm" style={{ marginLeft: "auto", display: "inline-flex" }}>
+                    <FiTrash2 size={13} style={{ marginRight: "4px" }} />
+                    <span>Remove</span>
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", width: "100%" }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => document.getElementById("status-favicon-input").click()}
+                    style={{ width: "100%", justifyContent: "center", display: "inline-flex" }}
+                    disabled={uploadingFavicon}
+                  >
+                    <FiUpload size={14} style={{ marginRight: "6px" }} />
+                    <span>{uploadingFavicon ? "Uploading..." : "Upload Favicon"}</span>
+                  </button>
+                  <input
+                    id="status-favicon-input"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFaviconUpload}
+                    style={{ display: "none" }}
+                  />
+                </div>
+              )}
+            </Field>
+          </div>
+
+          <div style={{ margin: "24px 0", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "20px" }}>
+            <h4 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "12px", color: "var(--text-primary)" }}>Custom Branding Colors</h4>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "12px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Primary Brand</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} style={{ width: "32px", height: "32px", border: "none", borderRadius: "4px", cursor: "pointer", background: "none" }} />
+                  <span style={{ fontSize: "12px", fontFamily: "var(--font-mono)" }}>{primaryColor}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Background</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <input type="color" value={backgroundColor} onChange={(e) => setBackgroundColor(e.target.value)} style={{ width: "32px", height: "32px", border: "none", borderRadius: "4px", cursor: "pointer", background: "none" }} />
+                  <span style={{ fontSize: "12px", fontFamily: "var(--font-mono)" }}>{backgroundColor}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Card Background</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <input type="color" value={cardBgColor} onChange={(e) => setCardBgColor(e.target.value)} style={{ width: "32px", height: "32px", border: "none", borderRadius: "4px", cursor: "pointer", background: "none" }} />
+                  <span style={{ fontSize: "12px", fontFamily: "var(--font-mono)" }}>{cardBgColor}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Text Color</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} style={{ width: "32px", height: "32px", border: "none", borderRadius: "4px", cursor: "pointer", background: "none" }} />
+                  <span style={{ fontSize: "12px", fontFamily: "var(--font-mono)" }}>{textColor}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Muted Text</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <input type="color" value={textMutedColor} onChange={(e) => setTextMutedColor(e.target.value)} style={{ width: "32px", height: "32px", border: "none", borderRadius: "4px", cursor: "pointer", background: "none" }} />
+                  <span style={{ fontSize: "12px", fontFamily: "var(--font-mono)" }}>{textMutedColor}</span>
+                </div>
+              </div>
+            </div>
+            <button type="button" onClick={() => {
+              setPrimaryColor("#6655ff");
+              setBackgroundColor("#0a0a0f");
+              setCardBgColor("#13131c");
+              setTextColor("#e8e8f0");
+              setTextMutedColor("#8888aa");
+            }} className="btn btn-ghost btn-xs" style={{ marginTop: "12px" }}>Reset to Defaults</button>
+          </div>
+
+          <Field
+            label="Custom CSS Stylesheet"
+            hint="Write raw CSS to overrides styles on the public status page (e.g. .system-status-banner { border-radius: 6px; })"
+            id="statusCustomCSS"
+          >
+            <textarea
+              id="statusCustomCSS"
+              className="profile-input profile-input--textarea"
+              style={{ fontFamily: "var(--font-mono)", fontSize: "12px" }}
+              value={customCSS}
+              onChange={(e) => setCustomCSS(e.target.value)}
+              placeholder="e.g. .status-card { border-radius: 20px; }"
+              rows={4}
+            />
+          </Field>
+
+          <div style={{ margin: "24px 0", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "20px" }}>
+            <h4 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "8px", color: "var(--text-primary)" }}>Private Access Settings</h4>
+            <div className="toggle-control" style={{ marginBottom: "16px" }}>
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={passwordProtected}
+                  onChange={(e) => setPasswordProtected(e.target.checked)}
+                />
+                <span className={`slider round ${passwordProtected ? "active" : ""}`}>
+                  <span className={`slider-thumb ${passwordProtected ? "active" : ""}`} />
+                </span>
+              </label>
+              <span className="toggle-label">Password-Protect Public Status Page</span>
+            </div>
+
+            {passwordProtected && (
+              <Field
+                label="Status Page Password"
+                hint="Leave blank to keep current password. Enter value to set/update."
+                id="statusPassword"
+              >
+                <input
+                  type="password"
+                  id="statusPassword"
+                  className="profile-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Set status page password..."
+                  autoComplete="new-password"
+                />
+              </Field>
+            )}
+          </div>
+
+          <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+            <button className="btn btn-primary" type="submit" disabled={saving}>
+              {saving ? "Saving settings..." : "Save Status Settings"}
+            </button>
+            <button
+              className="btn btn-outline"
+              type="button"
+              onClick={handleResetDefaults}
+              disabled={saving}
+              style={{ color: "var(--red)", borderColor: "rgba(239, 68, 68, 0.2)" }}
+            >
+              Reset to Defaults
+            </button>
+          </div>
         </form>
       </SectionCard>
 
@@ -1160,6 +1514,23 @@ const StatusPageSettings = ({ user, onUpdate }) => {
                     onClick={(e) => e.target.select()}
                   />
                   <CopyButton text={iframeCode} label="Iframe Code" />
+                </div>
+              </Field>
+
+              <Field
+                label="JavaScript Floating Status Widget"
+                hint="Add a live operational status badge widget to the bottom of your site. Paste this script tag in your HTML body."
+                id="jsStatusWidgetCode"
+              >
+                <div className="action-input-group">
+                  <input
+                    id="jsStatusWidgetCode"
+                    className="profile-input profile-input--readonly"
+                    readOnly
+                    value={widgetScriptCode}
+                    onClick={(e) => e.target.select()}
+                  />
+                  <CopyButton text={widgetScriptCode} label="Widget Script Code" />
                 </div>
               </Field>
             </div>

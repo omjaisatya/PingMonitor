@@ -69,7 +69,7 @@ export const updateName = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { name: name.trim() },
-      { returnDocument: 'after' },
+      { returnDocument: "after" },
     ).select("-password");
 
     res.json({ message: "Name updated", name: user.name });
@@ -90,7 +90,7 @@ export const updateThemePreference = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { themePreference },
-      { returnDocument: 'after' },
+      { returnDocument: "after" },
     ).select("-password");
 
     res.json({
@@ -201,6 +201,12 @@ export const updateStatusPageSettings = async (req, res) => {
       statusPageSlug,
       statusPageShowUrl,
       statusPageCandlePeriod,
+      statusPageCustomDomain,
+      statusPageColors,
+      statusPageCustomCSS,
+      statusPagePassword,
+      statusPagePasswordProtected,
+      statusPageTemplate,
     } = req.body;
 
     const user = await User.findById(req.user._id);
@@ -264,6 +270,69 @@ export const updateStatusPageSettings = async (req, res) => {
       user.statusPageCandlePeriod = statusPageCandlePeriod;
     }
 
+    if (statusPageCustomDomain !== undefined) {
+      const cleanDomain = statusPageCustomDomain.trim().toLowerCase();
+      if (cleanDomain === "") {
+        user.statusPageCustomDomain = undefined;
+      } else {
+        const domainRegex =
+          /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
+        if (!domainRegex.test(cleanDomain)) {
+          return res
+            .status(400)
+            .json({ message: "Invalid custom domain format" });
+        }
+
+        const existing = await User.findOne({
+          statusPageCustomDomain: cleanDomain,
+          _id: { $ne: user._id },
+        });
+        if (existing) {
+          return res
+            .status(400)
+            .json({ message: "This custom domain is already in use" });
+        }
+        user.statusPageCustomDomain = cleanDomain;
+      }
+    }
+
+    if (statusPageColors !== undefined) {
+      user.statusPageColors = {
+        primary: statusPageColors.primary || "#6655ff",
+        background: statusPageColors.background || "#0a0a0f",
+        cardBackground: statusPageColors.cardBackground || "#13131c",
+        text: statusPageColors.text || "#e8e8f0",
+        textMuted: statusPageColors.textMuted || "#8888aa",
+      };
+    }
+
+    if (statusPageCustomCSS !== undefined) {
+      user.statusPageCustomCSS = statusPageCustomCSS;
+    }
+
+    if (statusPageTemplate !== undefined) {
+      const allowedTemplates = ["classic", "grid", "minimal"];
+      if (!allowedTemplates.includes(statusPageTemplate)) {
+        return res.status(400).json({ message: "Invalid template selection" });
+      }
+      user.statusPageTemplate = statusPageTemplate;
+    }
+
+    if (statusPagePassword !== undefined) {
+      if (statusPagePassword === "") {
+        user.statusPagePassword = null;
+        user.statusPagePasswordProtected = false;
+      } else {
+        const salt = await bcrypt.genSalt(10);
+        user.statusPagePassword = await bcrypt.hash(statusPagePassword, salt);
+        user.statusPagePasswordProtected = true;
+      }
+    }
+
+    if (statusPagePasswordProtected !== undefined) {
+      user.statusPagePasswordProtected = !!statusPagePasswordProtected;
+    }
+
     await user.save();
     res.json({
       message: "Status page settings updated successfully",
@@ -279,9 +348,194 @@ export const updateStatusPageSettings = async (req, res) => {
         statusPageSlug: user.statusPageSlug,
         statusPageShowUrl: user.statusPageShowUrl,
         statusPageCandlePeriod: user.statusPageCandlePeriod,
+        statusPageCustomDomain: user.statusPageCustomDomain,
+        statusPageColors: user.statusPageColors,
+        statusPageCustomCSS: user.statusPageCustomCSS,
+        statusPagePasswordProtected: user.statusPagePasswordProtected,
+        statusPageTemplate: user.statusPageTemplate || "classic",
+        statusPageLogo: user.statusPageLogo,
+        statusPageFavicon: user.statusPageFavicon,
         themePreference: user.themePreference || "dark",
         avatar: user.avatar,
       },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const uploadStatusPageLogo = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image file provided" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.statusPageLogo && user.statusPageLogo.publicId) {
+      try {
+        await cloudinary.uploader.destroy(user.statusPageLogo.publicId);
+      } catch (err) {
+        console.error(
+          "Failed to delete old logo from Cloudinary:",
+          err.message,
+        );
+      }
+    }
+
+    const uploadToCloudinary = (fileBuffer) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "pingmonitor/status_logos",
+            resource_type: "image",
+            transformation: [
+              { width: 400, height: 120, crop: "limit" },
+              { quality: "auto:good", fetch_format: "auto", flags: "lossy" },
+            ],
+          },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          },
+        );
+        stream.end(fileBuffer);
+      });
+    };
+
+    const result = await uploadToCloudinary(req.file.buffer);
+
+    user.statusPageLogo = {
+      url: result.secure_url,
+      publicId: result.public_id,
+    };
+    await user.save();
+
+    res.json({
+      message: "Status page logo uploaded successfully",
+      statusPageLogo: user.statusPageLogo,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteStatusPageLogo = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.statusPageLogo && user.statusPageLogo.publicId) {
+      try {
+        await cloudinary.uploader.destroy(user.statusPageLogo.publicId);
+      } catch (err) {
+        console.error("Failed to delete logo from Cloudinary:", err.message);
+      }
+    }
+
+    user.statusPageLogo = {
+      url: null,
+      publicId: null,
+    };
+    await user.save();
+
+    res.json({
+      message: "Status page logo deleted successfully",
+      statusPageLogo: user.statusPageLogo,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const uploadStatusPageFavicon = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image file provided" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.statusPageFavicon && user.statusPageFavicon.publicId) {
+      try {
+        await cloudinary.uploader.destroy(user.statusPageFavicon.publicId);
+      } catch (err) {
+        console.error(
+          "Failed to delete old favicon from Cloudinary:",
+          err.message,
+        );
+      }
+    }
+
+    const uploadToCloudinary = (fileBuffer) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            folder: "pingmonitor/status_favicons",
+            resource_type: "image",
+            transformation: [
+              { width: 48, height: 48, crop: "fill" },
+              { quality: "auto:good", fetch_format: "auto", flags: "lossy" },
+            ],
+          },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          },
+        );
+        stream.end(fileBuffer);
+      });
+    };
+
+    const result = await uploadToCloudinary(req.file.buffer);
+
+    user.statusPageFavicon = {
+      url: result.secure_url,
+      publicId: result.public_id,
+    };
+    await user.save();
+
+    res.json({
+      message: "Status page favicon uploaded successfully",
+      statusPageFavicon: user.statusPageFavicon,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteStatusPageFavicon = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.statusPageFavicon && user.statusPageFavicon.publicId) {
+      try {
+        await cloudinary.uploader.destroy(user.statusPageFavicon.publicId);
+      } catch (err) {
+        console.error("Failed to delete favicon from Cloudinary:", err.message);
+      }
+    }
+
+    user.statusPageFavicon = {
+      url: null,
+      publicId: null,
+    };
+    await user.save();
+
+    res.json({
+      message: "Status page favicon deleted successfully",
+      statusPageFavicon: user.statusPageFavicon,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
